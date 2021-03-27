@@ -6,8 +6,7 @@ import java.io.File
 import java.io.FileReader
 import java.io.PrintWriter
 import java.lang.StringBuilder
-import java.util.*
-import kotlin.collections.ArrayList
+import kotlin.random.Random
 
 fun isWindows() : Boolean {
     return System.getProperty("os.name").startsWith("Windows")
@@ -107,6 +106,7 @@ class GameManager(
     }
 
     suspend fun runOneGame(input: BufferedReader, output: PrintWriter, firstMove: Boolean): Boolean {
+        System.err.println("Starting new game")
         var move = firstMove
         var any = false
         while (columnHeights[0].value > 0) {
@@ -130,7 +130,7 @@ class GameManager(
                             it.first,
                             it.second
                         ) > 0 && countEaten(it.first, it.second) <= maxEatenByRandom
-                    }.randomOrNull() ?: Pair(0, 0)
+                    }.randomOrNull(rnd) ?: Pair(0, 0)
                 processMove(randomMove.first, randomMove.second)
                 System.err.println("Making random move ${randomMove}")
                 output.println("${randomMove.first + 1} ${randomMove.second + 1}")
