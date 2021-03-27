@@ -9,12 +9,26 @@ import java.lang.StringBuilder
 import java.util.*
 import kotlin.collections.ArrayList
 
-class GameManager(val fieldSize: Int, val maxEatenByRandom: Int, val secretLength: Int, val drawMutex: Mutex, val needDealys: Boolean) {
+fun pipePrefix() : String {
+    if (System.getProperty("os.name").startsWith("Windows")) {
+        return "\\\\.pipe\\"
+    } else {
+        return "/tmp/"
+    }
+}
+
+class GameManager(
+    val fieldSize: Int,
+    val maxEatenByRandom: Int,
+    val secretLength: Int,
+    val drawMutex: Mutex,
+    val needDealys: Boolean
+) {
     val ready = mutableStateOf(false)
     var input: BufferedReader? = null
     var output: PrintWriter? = null
-    val inputFileName = "/tmp/game.out"
-    val outputFileName = "/tmp/game.in"
+    val inputFileName = pipePrefix() + "game.out"
+    val outputFileName = pipePrefix() + "game.in"
     val columnHeights = Array(fieldSize) { mutableStateOf(fieldSize) }
     val rnd = Random(239)
     val gameLog = mutableStateOf<String?>(null)
@@ -23,13 +37,19 @@ class GameManager(val fieldSize: Int, val maxEatenByRandom: Int, val secretLengt
     suspend fun run() {
         System.err.println("Start waiting for solution")
         coroutineScope {
-            withContext(Dispatchers.IO) {
-                input = BufferedReader(FileReader(File(inputFileName)))
-                System.err.println("input opened")
+            if (!File(inputFileName).exists()) {
+                Runtime.getRuntime().exec("mkfifo " + inputFileName)
+            }
+            if (!File(outputFileName).exists()) {
+                Runtime.getRuntime().exec("mkfifo " + outputFileName)
             }
             withContext(Dispatchers.IO) {
                 output = PrintWriter(File(outputFileName))
                 System.err.println("output opened")
+            }
+            withContext(Dispatchers.IO) {
+                input = BufferedReader(FileReader(File(inputFileName)))
+                System.err.println("input opened")
             }
         }
         ready.value = true
