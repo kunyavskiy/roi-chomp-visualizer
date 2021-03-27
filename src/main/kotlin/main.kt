@@ -21,7 +21,9 @@ fun String.isInt() = try {
     toInt(); true; } catch (ignored: NumberFormatException) {
     false; }
 
-fun main() = Window(title = "Визуализатор для задачи Игра с тайным смыслом", size = IntSize(600, 600)) {
+fun main() = visualizerMain()
+
+fun visualizerMain() = Window(title = "Визуализатор для задачи Игра с тайным смыслом", size = IntSize(600, 600)) {
     val game = remember { mutableStateOf<GameManager?>(null) }
     val fieldSize = remember { mutableStateOf("32") }
     val isFieldSizeValid = fieldSize.value.isInt()
