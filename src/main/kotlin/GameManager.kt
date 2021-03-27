@@ -9,8 +9,12 @@ import java.lang.StringBuilder
 import java.util.*
 import kotlin.collections.ArrayList
 
+fun isWindows() : Boolean {
+    return System.getProperty("os.name").startsWith("Windows")
+}
+
 fun pipePrefix() : String {
-    if (System.getProperty("os.name").startsWith("Windows")) {
+    if (isWindows()) {
         return "\\\\.pipe\\"
     } else {
         return "/tmp/"
@@ -37,11 +41,13 @@ class GameManager(
     suspend fun run() {
         System.err.println("Start waiting for solution")
         coroutineScope {
-            if (!File(inputFileName).exists()) {
-                Runtime.getRuntime().exec("mkfifo " + inputFileName)
-            }
-            if (!File(outputFileName).exists()) {
-                Runtime.getRuntime().exec("mkfifo " + outputFileName)
+            if (!isWindows()) {
+                if (!File(inputFileName).exists()) {
+                    Runtime.getRuntime().exec("mkfifo " + inputFileName)
+                }
+                if (!File(outputFileName).exists()) {
+                    Runtime.getRuntime().exec("mkfifo " + outputFileName)
+                }
             }
             withContext(Dispatchers.IO) {
                 output = PrintWriter(File(outputFileName))
