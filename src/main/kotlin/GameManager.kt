@@ -91,7 +91,7 @@ class GameManager(
     suspend fun processMove(x: Int, y: Int) {
         drawMutex.lock()
         for (i in x until fieldSize) {
-            columnHeights[i].value = minOf(columnHeights[i].value, y - 1)
+            columnHeights[i].value = minOf(columnHeights[i].value, y)
         }
         drawMutex.unlock()
         gameLogArray.add(Pair(x + 1, y + 1))
@@ -111,7 +111,7 @@ class GameManager(
         var any = false
         while (columnHeights[0].value > 0) {
             if (move) {
-                System.err.println("Wating for move")
+                System.err.println("Waiting for move")
                 val line = input.readLine()!!
                 System.err.println("Got line |$line|")
                 if (!any && line.isInt() && line.toInt() == 0) {
@@ -140,6 +140,7 @@ class GameManager(
                 }
             }
             move = !move
+            //System.err.println(columnHeights.map { it.value })
         }
         return true
     }
