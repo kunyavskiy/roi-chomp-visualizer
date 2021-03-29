@@ -124,18 +124,21 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
                                     )
                                 }
                                 for (i in 0 until n) {
-                                    val height = size.height / n * this@apply.columnHeights[i].value
-                                    drawRect(
-                                        color = Color.LightGray,
-                                        topLeft = Offset(
-                                            x = size.width / n * i,
-                                            y = size.height - height
-                                        ),
-                                        size = Size(
-                                            width = size.width / n,
-                                            height = height
+                                    val rows = this@apply.columnHeights[i].value
+                                    if (rows != n) {
+                                        val height = size.height / n * (n - rows)
+                                        drawRect(
+                                            color = Color.LightGray,
+                                            topLeft = Offset(
+                                                x = size.width / n * i,
+                                                y = 0f
+                                            ),
+                                            size = Size(
+                                                width = size.width / n,
+                                                height = height
+                                            )
                                         )
-                                    )
+                                    }
                                 }
                                 for (i in 0..n) {
                                     drawLine(
