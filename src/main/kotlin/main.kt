@@ -73,11 +73,20 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
     val needDrawGame = remember { mutableStateOf(false) }
     val logFilePath = remember { mutableStateOf<String?>(null) }
     val secretFilePath = remember { mutableStateOf<String?>(null) }
+    val errorMessage = remember { mutableStateOf<String?>(null) }
 
     runBlocking {
         drawMutex.lock()
     }
     MaterialTheme {
+        if (errorMessage.value != null) {
+            AlertDialog(
+                onDismissRequest = { errorMessage.value = null },
+                text = { errorMessage.value?.apply { Text(this@apply) }},
+                title = { Text("Ошибка") },
+                buttons = {}
+            )
+        }
         Column {
             if (game.value == null) {
                 IntTextField(fieldSize,"Размер поля")
@@ -111,6 +120,9 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
                         Text("Ожидание решения")
                         Text("Решение должно считывать из файла:" + outputFileName)
                         Text("Решение должно выводить в файл:" + inputFileName)
+                    } else if (gameError.value != null) {
+                        errorMessage.value = gameError.value
+                        game.value = null
                     } else if (gameLog.value != null) {
                         TextFieldWithChooseFileButton("Путь для сохранения лога", logFilePath)
                         TextFieldWithChooseFileButton("Путь для сохранения секрета", secretFilePath)
@@ -125,7 +137,7 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
                                             it.println(secret)
                                         }
                                     } catch (e : Exception) {
-
+                                        errorMessage.value = e.message
                                     }
                                     game.value = null
                                 },

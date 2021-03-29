@@ -6,6 +6,7 @@ import kotlin.random.Random
 
 import com.sun.jna.Platform;
 import java.io.*
+import java.lang.Exception
 
 fun pipePrefix() : String {
     if (Platform.isWindows()) {
@@ -32,6 +33,7 @@ class GameManager(
     val gameLog = mutableStateOf<String?>(null)
     var secret:String? = null
     val gameLogArray = mutableListOf<Pair<Int, Int>>()
+    val gameError = mutableStateOf<String?>(null)
 
     suspend fun run() {
         System.err.println("Start waiting for solution")
@@ -61,30 +63,34 @@ class GameManager(
         System.err.println("Init is done")
         GlobalScope.launch {
             withContext(Dispatchers.IO) {
-                val output = output!!
-                val input = input!!
-                output.println("1 ${fieldSize} ${maxEatenByRandom} ${secretLength}");
-                secret = Array(secretLength) { rnd.nextInt(2) }.joinToString("")
-                output.println(secret)
-                output.flush()
-                var firstMove = true
-                var games = 0
-                while (runOneGame(input, output, firstMove)) {
-                    games += 1
-                    firstMove = !firstMove
-                    runBlocking {
-                        drawMutex.lock()
-                        for (i in 0 until fieldSize) {
-                            columnHeights[i].value = fieldSize
+                try {
+                    val output = output!!
+                    val input = input!!
+                    output.println("1 ${fieldSize} ${maxEatenByRandom} ${secretLength}");
+                    secret = Array(secretLength) { rnd.nextInt(2) }.joinToString("")
+                    output.println(secret)
+                    output.flush()
+                    var firstMove = true
+                    var games = 0
+                    while (runOneGame(input, output, firstMove)) {
+                        games += 1
+                        firstMove = !firstMove
+                        runBlocking {
+                            drawMutex.lock()
+                            for (i in 0 until fieldSize) {
+                                columnHeights[i].value = fieldSize
+                            }
+                            drawMutex.unlock()
                         }
-                        drawMutex.unlock()
                     }
+                    val builder = StringBuilder()
+                    builder.append("2 ${fieldSize} ${maxEatenByRandom} ${secretLength}").append(System.lineSeparator())
+                    builder.append(games).append(System.lineSeparator())
+                    builder.append(gameLogArray.joinToString(System.lineSeparator()) { "${it.first} ${it.second}" })
+                    gameLog.value = builder.toString()
+                } catch (e : Exception) {
+                    gameError.value = e.message ?: "Неизвестная ошибка"
                 }
-                val builder = StringBuilder()
-                builder.append("2 ${fieldSize} ${maxEatenByRandom} ${secretLength}").append(System.lineSeparator())
-                builder.append(games).append(System.lineSeparator())
-                builder.append(gameLogArray.joinToString(System.lineSeparator()) { "${it.first} ${it.second}" })
-                gameLog.value = builder.toString()
             }
         }
     }
@@ -112,7 +118,7 @@ class GameManager(
         var any = false
         while (columnHeights[0].value > 0) {
             if (move) {
-                val line = input.readLine()!!
+                val line = input.readLine() ?: throw RuntimeException("Неожиданный конец ввода")
                 if (!any && line.isInt() && line.toInt() == 0) {
                     if (!firstMove) {
                         gameLogArray.removeLast()
