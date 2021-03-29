@@ -12,8 +12,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import kotlinx.coroutines.sync.Mutex
-import java.awt.TextArea
 import java.io.File
 import java.io.PrintWriter
 
@@ -108,52 +108,7 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
                         }
                     } else if (needDrawGame.value) {
                         Canvas(Modifier.fillMaxSize()) {
-                            System.err.println("redraw")
-                            val n = this@apply.fieldSize
-                            try {
-                                for (i in 0..n) {
-                                    drawLine(
-                                        start = Offset(0f, size.height / n * i),
-                                        end = Offset(size.width, size.height / n * i),
-                                        color = Color.Black
-                                    )
-                                    drawLine(
-                                        start = Offset(size.width / n * i, 0f),
-                                        end = Offset(size.width / n * i, size.height),
-                                        color = Color.Black
-                                    )
-                                }
-                                for (i in 0 until n) {
-                                    val rows = this@apply.columnHeights[i].value
-                                    if (rows != n) {
-                                        val height = size.height / n * (n - rows)
-                                        drawRect(
-                                            color = Color.LightGray,
-                                            topLeft = Offset(
-                                                x = size.width / n * i,
-                                                y = 0f
-                                            ),
-                                            size = Size(
-                                                width = size.width / n,
-                                                height = height
-                                            )
-                                        )
-                                    }
-                                }
-                                for (i in 0..n) {
-                                    drawLine(
-                                        start = Offset(0f, size.height / n * i),
-                                        end = Offset(size.width, size.height / n * i),
-                                        color = Color.Black
-                                    )
-                                    drawLine(
-                                        start = Offset(size.width / n * i, 0f),
-                                        end = Offset(size.width / n * i, size.height),
-                                        color = Color.Black
-                                    )
-                                }
-                            } catch (ignored: Exception) {
-                            }
+                            this@apply.drawGameState(this)
                         }
                     } else {
                         Text("Ожидаем работы решения")
@@ -163,4 +118,53 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
         }
     }
     drawMutex.unlock()
+}
+
+private fun GameManager.drawGameState(canvas: DrawScope) = with (canvas) {
+    System.err.println("redraw")
+    val n = fieldSize
+    try {
+        for (i in 0..n) {
+            drawLine(
+                start = Offset(0f, size.height / n * i),
+                end = Offset(size.width, size.height / n * i),
+                color = Color.Black
+            )
+            drawLine(
+                start = Offset(size.width / n * i, 0f),
+                end = Offset(size.width / n * i, size.height),
+                color = Color.Black
+            )
+        }
+        for (i in 0 until n) {
+            val rows = columnHeights[i].value
+            if (rows != n) {
+                val height = size.height / n * (n - rows)
+                drawRect(
+                    color = Color.LightGray,
+                    topLeft = Offset(
+                        x = size.width / n * i,
+                        y = 0f
+                    ),
+                    size = Size(
+                        width = size.width / n,
+                        height = height
+                    )
+                )
+            }
+        }
+        for (i in 0..n) {
+            drawLine(
+                start = Offset(0f, size.height / n * i),
+                end = Offset(size.width, size.height / n * i),
+                color = Color.Black
+            )
+            drawLine(
+                start = Offset(size.width / n * i, 0f),
+                end = Offset(size.width / n * i, size.height),
+                color = Color.Black
+            )
+        }
+    } catch (ignored: Exception) {
+    }
 }
