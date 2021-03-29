@@ -8,12 +8,10 @@ import java.io.PrintWriter
 import java.lang.StringBuilder
 import kotlin.random.Random
 
-fun isWindows() : Boolean {
-    return System.getProperty("os.name").startsWith("Windows")
-}
+import com.sun.jna.Platform;
 
 fun pipePrefix() : String {
-    if (isWindows()) {
+    if (Platform.isWindows()) {
         return "\\\\.pipe\\"
     } else {
         return "/tmp/"
@@ -40,7 +38,9 @@ class GameManager(
     suspend fun run() {
         System.err.println("Start waiting for solution")
         coroutineScope {
-            if (!isWindows()) {
+            if (Platform.isWindows()) {
+                TODO("Create pipes!!!")
+            } else {
                 if (!File(inputFileName).exists()) {
                     Runtime.getRuntime().exec("mkfifo " + inputFileName)
                 }

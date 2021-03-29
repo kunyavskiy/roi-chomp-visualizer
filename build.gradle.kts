@@ -21,6 +21,7 @@ dependencies {
     implementation(compose.desktop.currentOs)
     implementation(kotlin("stdlib"))
     implementation("org.jetbrains.compose.material:material:")
+    implementation("net.java.dev.jna:jna-platform:5.8.0")
 }
 
 tasks.withType<KotlinCompile>() {
