@@ -15,6 +15,7 @@ repositories {
     jcenter()
     mavenCentral()
     maven { url = uri("https://maven.pkg.jetbrains.space/public/p/compose/dev") }
+    maven { url = uri("https://packages.jetbrains.team/maven/p/skija/maven") }
 }
 
 dependencies {
@@ -22,6 +23,7 @@ dependencies {
     implementation(kotlin("stdlib"))
     implementation("org.jetbrains.compose.material:material:")
     implementation("net.java.dev.jna:jna-platform:5.8.0")
+    //implementation("org.jetbrains.skija:skija-macos:0.89.0") - some magic to fix macos build
 }
 
 tasks.withType<KotlinCompile>() {
