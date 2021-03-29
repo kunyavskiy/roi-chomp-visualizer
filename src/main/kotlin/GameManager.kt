@@ -1,14 +1,11 @@
 import androidx.compose.runtime.mutableStateOf
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
-import java.io.BufferedReader
-import java.io.File
-import java.io.FileReader
-import java.io.PrintWriter
 import java.lang.StringBuilder
 import kotlin.random.Random
 
 import com.sun.jna.Platform;
+import java.io.*
 
 fun pipePrefix() : String {
     if (Platform.isWindows()) {
@@ -48,13 +45,15 @@ class GameManager(
                     Runtime.getRuntime().exec("mkfifo " + outputFileName)
                 }
             }
-            withContext(Dispatchers.IO) {
-                output = PrintWriter(File(outputFileName))
-                System.err.println("output opened")
+            launch {
+                withContext(Dispatchers.IO) {
+                    output = File(outputFileName).printWriter()
+                }
             }
-            withContext(Dispatchers.IO) {
-                input = BufferedReader(FileReader(File(inputFileName)))
-                System.err.println("input opened")
+            launch {
+                withContext(Dispatchers.IO) {
+                    input = File(inputFileName).bufferedReader()
+                }
             }
         }
         ready.value = true
