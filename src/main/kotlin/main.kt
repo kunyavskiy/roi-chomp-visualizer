@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.IntSize
@@ -16,12 +18,48 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import kotlinx.coroutines.sync.Mutex
 import java.io.File
 import java.io.PrintWriter
+import javax.swing.JFileChooser
 
 fun String.isInt() = try {
     toInt(); true; } catch (ignored: NumberFormatException) {
     false; }
 
 fun main() = visualizerMain()
+
+@Composable
+fun TextFieldWithChooseFileButton(label: String, filePath: MutableState<String?>) {
+    Row {
+        TextField(
+            filePath.value ?: "",
+            onValueChange = { filePath.value = it },
+            singleLine = true,
+            label = { Text(label) },
+        )
+        Button(
+            onClick = {
+                var result: File?
+                JFileChooser(File(".")).apply {
+                    showOpenDialog(null)
+                    result = selectedFile
+                }
+                result?.apply {
+                    filePath.value = relativeTo(File(".").canonicalFile).path
+                }
+            }
+        ) { Text("...") }
+    }
+}
+
+@Composable
+fun IntTextField(state: MutableState<String>, label: String) {
+    TextField(
+        state.value,
+        onValueChange = { state.value = it },
+        singleLine = true,
+        isErrorValue = !state.value.isInt(),
+        label = { Text(label) }
+    )
+}
 
 fun visualizerMain() = Window(title = "Визуализатор для задачи Игра с тайным смыслом", size = IntSize(600, 600)) {
     val game = remember { mutableStateOf<GameManager?>(null) }
@@ -33,7 +71,8 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
     val isSecretLengthValid = secretLength.value.isInt()
     val drawMutex = remember { Mutex() }
     val needDrawGame = remember { mutableStateOf(false) }
-    val filePath = remember { mutableStateOf("") }
+    val logFilePath = remember { mutableStateOf<String?>(null) }
+    val secretFilePath = remember { mutableStateOf<String?>(null) }
 
     runBlocking {
         drawMutex.lock()
@@ -41,27 +80,9 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
     MaterialTheme {
         Column {
             if (game.value == null) {
-                TextField(
-                    fieldSize.value,
-                    onValueChange = { fieldSize.value = it },
-                    singleLine = true,
-                    isErrorValue = !isFieldSizeValid,
-                    label = { Text("Размер поля") }
-                )
-                TextField(
-                    maxEaten.value,
-                    onValueChange = { maxEaten.value = it },
-                    singleLine = true,
-                    isErrorValue = !isMaxEatenValid,
-                    label = { Text("Максимум клеток за ход бота") }
-                )
-                TextField(
-                    secretLength.value,
-                    onValueChange = { secretLength.value = it },
-                    singleLine = true,
-                    isErrorValue = !isSecretLengthValid,
-                    label = { Text("Длина очень важного секерета") }
-                )
+                IntTextField(fieldSize,"Размер поля")
+                IntTextField(maxEaten,"Максимум клеток за ход бота")
+                IntTextField(secretLength,"Длина очень важного секерета")
                 Button(
                     {
                         if (game.value == null) {
@@ -91,19 +112,25 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
                         Text("Решение должно считывать из файла:" + outputFileName)
                         Text("Решение должно выводить в файл:" + inputFileName)
                     } else if (gameLog.value != null) {
-                        TextField(
-                            filePath.value,
-                            onValueChange = { filePath.value = it },
-                            singleLine = true,
-                            label = { Text("Путь для сохранения лога") }
-                        )
+                        TextFieldWithChooseFileButton("Путь для сохранения лога", logFilePath)
+                        TextFieldWithChooseFileButton("Путь для сохранения секрета", secretFilePath)
                         Row {
-                            Button({
-                                val writer = PrintWriter(File(filePath.value))
-                                writer.println(gameLog.value)
-                                writer.close()
-                                game.value = null
-                            }) { Text("Сохранить") }
+                            Button(
+                                onClick = {
+                                    try {
+                                        File(logFilePath.value!!).printWriter().use {
+                                            it.println(gameLog.value)
+                                        }
+                                        File(secretFilePath.value!!).printWriter().use {
+                                            it.println(secret)
+                                        }
+                                    } catch (e : Exception) {
+
+                                    }
+                                    game.value = null
+                                },
+                                enabled = logFilePath.value != null && secretFilePath.value != null
+                            ) { Text("Сохранить") }
                             Button({ game.value = null }) { Text("Не Сохранять") }
                         }
                     } else if (needDrawGame.value) {

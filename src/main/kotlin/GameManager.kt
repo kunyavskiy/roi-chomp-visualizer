@@ -30,6 +30,7 @@ class GameManager(
     val columnHeights = Array(fieldSize) { mutableStateOf(fieldSize) }
     val rnd = Random(239)
     val gameLog = mutableStateOf<String?>(null)
+    var secret:String? = null
     val gameLogArray = mutableListOf<Pair<Int, Int>>()
 
     suspend fun run() {
@@ -63,7 +64,8 @@ class GameManager(
                 val output = output!!
                 val input = input!!
                 output.println("1 ${fieldSize} ${maxEatenByRandom} ${secretLength}");
-                output.println(Array(secretLength) { rnd.nextInt(2) }.joinToString(""))
+                secret = Array(secretLength) { rnd.nextInt(2) }.joinToString("")
+                output.println(secret)
                 output.flush()
                 var firstMove = true
                 var games = 0
@@ -110,9 +112,7 @@ class GameManager(
         var any = false
         while (columnHeights[0].value > 0) {
             if (move) {
-                System.err.println("Waiting for move")
                 val line = input.readLine()!!
-                System.err.println("Got line |$line|")
                 if (!any && line.isInt() && line.toInt() == 0) {
                     if (!firstMove) {
                         gameLogArray.removeLast()
@@ -131,7 +131,6 @@ class GameManager(
                         ) > 0 && countEaten(it.first, it.second) <= maxEatenByRandom
                     }.randomOrNull(rnd) ?: Pair(0, 0)
                 processMove(randomMove.first, randomMove.second)
-                System.err.println("Making random move ${randomMove}")
                 output.println("${randomMove.first + 1} ${randomMove.second + 1}")
                 output.flush()
                 if (needDealys) {
@@ -139,7 +138,6 @@ class GameManager(
                 }
             }
             move = !move
-            //System.err.println(columnHeights.map { it.value })
         }
         return true
     }
