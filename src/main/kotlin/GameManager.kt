@@ -12,7 +12,7 @@ import java.lang.NumberFormatException
 
 fun pipePrefix() : String {
     if (Platform.isWindows()) {
-        return "\\\\.pipe\\"
+        return "\\\\.\\pipe\\"
     } else {
         return "/tmp/"
     }
@@ -45,7 +45,18 @@ class GameManager(
         System.err.println("Start waiting for solution")
         coroutineScope {
             if (Platform.isWindows()) {
-                TODO("Create pipes!!!")
+                launch {
+                    withContext(Dispatchers.IO) {
+                        val pipeOutputStream = createPipeOut("game.in")
+                        output = PrintWriter(pipeOutputStream)
+                    }
+                }
+                launch {
+                    withContext(Dispatchers.IO) {
+                        val pipeInStream = createPipeIn("game.out")
+                        input = pipeInStream.bufferedReader()
+                    }
+                }
             } else {
                 if (!File(inputFileName).exists()) {
                     Runtime.getRuntime().exec("mkfifo " + inputFileName)
@@ -53,15 +64,15 @@ class GameManager(
                 if (!File(outputFileName).exists()) {
                     Runtime.getRuntime().exec("mkfifo " + outputFileName)
                 }
-            }
-            launch {
-                withContext(Dispatchers.IO) {
-                    output = File(outputFileName).printWriter()
+                launch {
+                    withContext(Dispatchers.IO) {
+                        output = File(outputFileName).printWriter()
+                    }
                 }
-            }
-            launch {
-                withContext(Dispatchers.IO) {
-                    input = File(inputFileName).bufferedReader()
+                launch {
+                    withContext(Dispatchers.IO) {
+                        input = File(inputFileName).bufferedReader()
+                    }
                 }
             }
         }
