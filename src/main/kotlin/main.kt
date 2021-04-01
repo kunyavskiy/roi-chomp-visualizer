@@ -1,8 +1,7 @@
 import androidx.compose.desktop.Window
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
@@ -15,6 +14,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.selection.Selection
+import androidx.compose.ui.selection.SelectionContainer
 import kotlinx.coroutines.sync.Mutex
 import java.io.File
 import java.io.PrintWriter
@@ -58,6 +59,14 @@ fun IntTextField(state: MutableState<String>, label: String) {
         singleLine = true,
         isErrorValue = !state.value.isInt(),
         label = { Text(label) }
+    )
+}
+
+@Composable
+fun ConstTextField(value : String) {
+    TextField(
+        value,
+        onValueChange = { },
     )
 }
 
@@ -120,6 +129,56 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
                         Text("Ожидание решения")
                         Text("Решение должно считывать из файла:" + outputFileName)
                         Text("Решение должно выводить в файл:" + inputFileName)
+                        Text("Пример кода для открытия файлов для:")
+                        val langs = listOf("C++", "Java", "Python")
+                        val selectedLanguage = remember { mutableStateOf(langs[0]) }
+                        langs.forEach {
+                            Row {
+                                RadioButton(
+                                    onClick = { selectedLanguage.value = it },
+                                    selected = selectedLanguage.value == it
+                                )
+                                Text(it)
+                            }
+                        }
+                        val outputFileNameEncoded = outputFileName.replace("\\", "\\\\")
+                        val inputfileNameEncoded = inputFileName.replace("\\", "\\\\")
+                        when (selectedLanguage.value) {
+                            "C++" -> {
+                                ConstTextField(
+                                    """
+                                        freopen("${outputFileNameEncoded}, "r", stdin);
+                                        freopen("${inputfileNameEncoded}", "w", stdout);
+                                    """.trimIndent()
+                                )
+                                Text("или")
+                                ConstTextField(
+                                    """
+                                        ifstream in("${outputFileNameEncoded}");
+                                        ofstream out("${inputfileNameEncoded}");
+                                    """.trimIndent()
+                                )
+                            }
+                            "Java" -> {
+                                ConstTextField(
+                                    """
+                                        File inputFile = new File("${outputFileNameEncoded}");
+                                        File outputFile = new File("${inputfileNameEncoded}");
+                                        Scanner in = new Scanner(inputFile);
+                                        PrintWriter out = new PrintWriter(outputFile); 
+                                    """.trimIndent()
+                                )
+                            }
+                            "Python" -> {
+                                ConstTextField(
+                                    """
+                                        inputFile = open("${outputFileNameEncoded}", "r");
+                                        outputFile = open("${inputfileNameEncoded}", "w");
+                                    """.trimIndent()
+                                )
+
+                            }
+                        }
                     } else if (gameError.value != null) {
                         errorMessage.value = gameError.value
                         game.value = null
