@@ -4,4 +4,5 @@
     <option name="gradleBuildDir" value="$MODULE_DIR$/../../build" />
     <option name="gradleModuleDir" value="$MODULE_DIR$/../.." />
   </component>
+  <component name="TestModuleProperties" production-module="visualizer.main" />
 </module>
