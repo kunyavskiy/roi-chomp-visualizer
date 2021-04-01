@@ -1,24 +1,20 @@
 import androidx.compose.desktop.Window
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.unit.IntSize
-import kotlinx.coroutines.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.selection.Selection
-import androidx.compose.ui.selection.SelectionContainer
+import androidx.compose.ui.unit.IntSize
+import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import java.io.File
-import java.io.PrintWriter
 import javax.swing.JFileChooser
 
 fun String.isInt() = try {
@@ -63,7 +59,7 @@ fun IntTextField(state: MutableState<String>, label: String) {
 }
 
 @Composable
-fun ConstTextField(value : String) {
+fun ConstTextField(value: String) {
     TextField(
         value,
         onValueChange = { },
@@ -91,16 +87,16 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
         if (errorMessage.value != null) {
             AlertDialog(
                 onDismissRequest = { errorMessage.value = null },
-                text = { errorMessage.value?.apply { Text(this@apply) }},
+                text = { errorMessage.value?.apply { Text(this@apply) } },
                 title = { Text("Ошибка") },
                 buttons = {}
             )
         }
         Column {
             if (game.value == null) {
-                IntTextField(fieldSize,"Размер поля")
-                IntTextField(maxEaten,"Максимум клеток за ход бота")
-                IntTextField(secretLength,"Длина очень важного секерета")
+                IntTextField(fieldSize, "Размер поля")
+                IntTextField(maxEaten, "Максимум клеток за ход бота")
+                IntTextField(secretLength, "Длина очень важного секерета")
                 Button(
                     {
                         if (game.value == null) {
@@ -126,9 +122,11 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
             } else {
                 game.value?.apply {
                     if (!ready.value) {
+                        val outputName = getPipePrefix() + outputFileName
+                        val inputName = getPipePrefix() + inputFileName
                         Text("Ожидание решения")
-                        Text("Решение должно считывать из файла:" + outputFileName)
-                        Text("Решение должно выводить в файл:" + inputFileName)
+                        Text("Решение должно считывать из файла:" + outputName)
+                        Text("Решение должно выводить в файл:" + inputName)
                         Text("Пример кода для открытия файлов для:")
                         val langs = listOf("C++", "Java", "Python")
                         val selectedLanguage = remember { mutableStateOf(langs[0]) }
@@ -141,8 +139,8 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
                                 Text(it)
                             }
                         }
-                        val outputFileNameEncoded = outputFileName.replace("\\", "\\\\")
-                        val inputfileNameEncoded = inputFileName.replace("\\", "\\\\")
+                        val outputFileNameEncoded = outputName.replace("\\", "\\\\")
+                        val inputfileNameEncoded = inputName.replace("\\", "\\\\")
                         when (selectedLanguage.value) {
                             "C++" -> {
                                 ConstTextField(
@@ -195,7 +193,7 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
                                         File(secretFilePath.value!!).printWriter().use {
                                             it.println(secret)
                                         }
-                                    } catch (e : Exception) {
+                                    } catch (e: Exception) {
                                         errorMessage.value = e.message
                                     }
                                     game.value = null
@@ -218,7 +216,7 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
     drawMutex.unlock()
 }
 
-private fun GameManager.drawGameState(canvas: DrawScope) = with (canvas) {
+private fun GameManager.drawGameState(canvas: DrawScope) = with(canvas) {
     System.err.println("redraw")
     val n = fieldSize
     try {

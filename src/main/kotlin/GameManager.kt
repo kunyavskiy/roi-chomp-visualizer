@@ -1,26 +1,12 @@
 import androidx.compose.runtime.mutableStateOf
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
-import java.lang.StringBuilder
+import kotlinx.coroutines.sync.withLock
+import java.io.BufferedReader
+import java.io.PrintWriter
 import kotlin.random.Random
 
-import com.sun.jna.Platform;
-import kotlinx.coroutines.sync.withLock
-import java.io.*
-import java.lang.Exception
-import java.lang.NumberFormatException
-
-fun pipePrefix() : String {
-    if (Platform.isWindows()) {
-        return "\\\\.\\pipe\\"
-    } else {
-        return "/tmp/"
-    }
-}
-
-class BadMoveException(message: String?) : Exception(message) {
-
-}
+class BadMoveException(message: String?) : Exception(message)
 
 class GameManager(
     val fieldSize: Int,
@@ -32,60 +18,37 @@ class GameManager(
     val ready = mutableStateOf(false)
     var input: BufferedReader? = null
     var output: PrintWriter? = null
-    val inputFileName = pipePrefix() + "game.out"
-    val outputFileName = pipePrefix() + "game.in"
+    val inputFileName = "game.out"
+    val outputFileName = "game.in"
     val columnHeights = Array(fieldSize) { mutableStateOf(fieldSize) }
     val rnd = Random(239)
     val gameLog = mutableStateOf<String?>(null)
-    var secret:String? = null
+    var secret: String? = null
     val gameLogArray = mutableListOf<Pair<Int, Int>>()
     val gameError = mutableStateOf<String?>(null)
 
     suspend fun run() {
-        System.err.println("Start waiting for solution")
         coroutineScope {
-            if (Platform.isWindows()) {
-                launch {
-                    withContext(Dispatchers.IO) {
-                        val pipeOutputStream = createPipeOut("game.in")
-                        output = PrintWriter(pipeOutputStream)
-                    }
+            launch {
+                withContext(Dispatchers.IO) {
+                    output = PrintWriter(createOutputPipe(outputFileName))
                 }
-                launch {
-                    withContext(Dispatchers.IO) {
-                        val pipeInStream = createPipeIn("game.out")
-                        input = pipeInStream.bufferedReader()
-                    }
-                }
-            } else {
-                if (!File(inputFileName).exists()) {
-                    Runtime.getRuntime().exec("mkfifo " + inputFileName)
-                }
-                if (!File(outputFileName).exists()) {
-                    Runtime.getRuntime().exec("mkfifo " + outputFileName)
-                }
-                launch {
-                    withContext(Dispatchers.IO) {
-                        output = File(outputFileName).printWriter()
-                    }
-                }
-                launch {
-                    withContext(Dispatchers.IO) {
-                        input = File(inputFileName).bufferedReader()
-                    }
+            }
+            launch {
+                withContext(Dispatchers.IO) {
+                    input = createInputPipe(inputFileName).bufferedReader()
                 }
             }
         }
         ready.value = true
-        System.err.println("Init is done")
         GlobalScope.launch {
             withContext(Dispatchers.IO) {
                 try {
                     val output = output!!
                     val input = input!!
-                    output.println("1 ${fieldSize} ${maxEatenByRandom} ${secretLength}");
+                    output.println("1 ${fieldSize} ${maxEatenByRandom} ${secretLength}")
                     secret = Array(secretLength) { rnd.nextInt(2) }.joinToString("")
-                    output.println(secret)
+                    output.println(secret!!)
                     output.flush()
                     var firstMove = true
                     var games = 0
@@ -105,7 +68,7 @@ class GameManager(
                     builder.append(games).append(System.lineSeparator())
                     builder.append(gameLogArray.joinToString(System.lineSeparator()) { "${it.first} ${it.second}" })
                     gameLog.value = builder.toString()
-                } catch (e : Exception) {
+                } catch (e: Exception) {
                     gameError.value = e.message ?: "Неизвестная ошибка"
                 } finally {
                     input?.close()
@@ -118,7 +81,7 @@ class GameManager(
     suspend fun processMove(x: Int, y: Int) {
         drawMutex.withLock {
             if (columnHeights[x].value <= y) {
-                throw BadMoveException("Невалидный ход: клетка ${x+1} ${y+1} уже закрашена")
+                throw BadMoveException("Невалидный ход: клетка ${x + 1} ${y + 1} уже закрашена")
             }
             for (i in x until fieldSize) {
                 columnHeights[i].value = minOf(columnHeights[i].value, y)
@@ -136,7 +99,6 @@ class GameManager(
     }
 
     suspend fun runOneGame(input: BufferedReader, output: PrintWriter, firstMove: Boolean): Boolean {
-        System.err.println("Starting new game")
         var move = firstMove
         var any = false
         while (columnHeights[0].value > 0) {
@@ -146,7 +108,7 @@ class GameManager(
                     if (!firstMove) {
                         gameLogArray.removeLast()
                     }
-                    return false;
+                    return false
                 }
                 any = true
                 try {
@@ -160,7 +122,7 @@ class GameManager(
                     } else {
                         throw BadMoveException("Ожидалось два числа от 1 до ${fieldSize}, а решение вывело $x $y")
                     }
-                } catch (e : NumberFormatException) {
+                } catch (e: NumberFormatException) {
                     throw BadMoveException("Ожидалось два числа, а решение вывело \"${line}\"")
                 }
             } else {
