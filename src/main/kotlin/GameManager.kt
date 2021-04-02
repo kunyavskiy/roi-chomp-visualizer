@@ -91,7 +91,15 @@ class GameManager(
         gameLogArray.add(Pair(x + 1, y + 1))
     }
 
-    private fun countEaten(x: Int, y: Int) = columnHeights.asSequence().drop(x).sumBy { maxOf(0, it.value - y) }
+    private fun eatenMoreThan(x: Int, y: Int, limit: Int): Boolean {
+        var sum = 0
+        for (i in x until fieldSize) {
+            if (columnHeights[i].value <= y) return false
+            sum += columnHeights[i].value - y
+            if (sum > limit) return true
+        }
+        return false
+    }
 
     private suspend fun runOneGame(input: BufferedReader, output: PrintWriter, firstMove: Boolean): Boolean {
         var move = firstMove
@@ -117,12 +125,13 @@ class GameManager(
                     throw BadMoveException("Ожидалось два числа, а решение вывело \"$line\"")
                 }
             } else {
-                val allMoves = (0 until fieldSize).asSequence().flatMap { x ->
-                    (0 until columnHeights[x].value).asSequence().map { Pair(x, it) }
-                }
-                val randomMove = allMoves.filter {
-                    it != Pair(0, 0) && countEaten(it.first, it.second) <= maxEatenByRandom
-                }.toList().randomOrNull(rnd) ?: Pair(0, 0)
+
+                val possibleMoves = (0 until fieldSize).asSequence().flatMap { x ->
+                    (0 until columnHeights[x].value).reversed().asSequence().map { Pair(x, it) }.takeWhile {
+                        it != Pair(0, 0) && !eatenMoreThan(it.first, it.second, maxEatenByRandom)
+                    }
+                }.toList()
+                val randomMove = possibleMoves.randomOrNull(rnd) ?: Pair(0, 0)
                 processMove(randomMove.first, randomMove.second)
                 output.println("${randomMove.first + 1} ${randomMove.second + 1}")
                 output.flush()

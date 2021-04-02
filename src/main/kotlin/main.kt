@@ -52,7 +52,7 @@ fun IntTextField(state: MutableState<String>, label: String) {
         state.value,
         onValueChange = { state.value = it },
         singleLine = true,
-        isErrorValue = !(state.value.toIntOrNull() != null),
+        isErrorValue = state.value.toIntOrNull() == null,
         label = { Text(label) }
     )
 }
@@ -71,7 +71,7 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
     val maxEaten = remember { mutableStateOf("5") }
     val secretLength = remember { mutableStateOf("100") }
     val drawMutex = remember { Mutex() }
-    val needDrawGame = remember { mutableStateOf(false) }
+    val needDrawGame = remember { mutableStateOf(true) }
     val logFilePath = remember { mutableStateOf<String?>(null) }
     val secretFilePath = remember { mutableStateOf<String?>(null) }
     val errorMessage = remember { mutableStateOf<String?>(null) }
