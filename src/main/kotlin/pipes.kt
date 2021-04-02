@@ -11,18 +11,18 @@ import java.io.OutputStream
 fun getPipePrefix() = if (Platform.isWindows()) "\\\\.\\pipe\\" else "/tmp/"
 
 fun createInputPipe(name: String): InputStream {
-    if (Platform.isWindows()) {
-        return Win32PipeInputStream(createWin32Pipe(name, true))
+    return if (Platform.isWindows()) {
+        Win32PipeInputStream(createWin32Pipe(name, true))
     } else {
-        return createLinuxPipe(name).inputStream()
+        createLinuxPipe(name).inputStream()
     }
 }
 
 fun createOutputPipe(name: String): OutputStream {
-    if (Platform.isWindows()) {
-        return Win32PipeOutputStream(createWin32Pipe(name, false))
+    return if (Platform.isWindows()) {
+        Win32PipeOutputStream(createWin32Pipe(name, false))
     } else {
-        return createLinuxPipe(name).outputStream()
+        createLinuxPipe(name).outputStream()
     }
 }
 
@@ -30,7 +30,7 @@ fun createLinuxPipe(name: String): File {
     val fullName = getPipePrefix() + name
     val file = File(fullName)
     if (!file.exists()) {
-        Runtime.getRuntime().exec("mkfifo " + fullName)
+        Runtime.getRuntime().exec("mkfifo $fullName")
     }
     return file
 }
@@ -45,7 +45,7 @@ fun createWin32Pipe(name: String, isIn: Boolean): WinNT.HANDLE {
         1, Short.MAX_VALUE.toInt(), Short.MAX_VALUE.toInt(),  // nInBufferSize,
         1000000,
         null
-    ) ?: error("null")
+    ) ?: error("CreateNamedPipe error")
     Kernel32.INSTANCE.ConnectNamedPipe(hNamedPipe, null) || error("ConnectNamedPipe")
     return hNamedPipe
 }
@@ -53,8 +53,7 @@ fun createWin32Pipe(name: String, isIn: Boolean): WinNT.HANDLE {
 class Win32PipeInputStream(private val pipe: WinNT.HANDLE) : InputStream() {
     override fun read(): Int {
         val b = ByteArray(1)
-        val read: Int = read(b)
-        return if (read == -1) -1 else 0xFF and b[0].toInt()
+        return if (read(b) == -1) -1 else 0xFF and b[0].toInt()
     }
 
     override fun read(b: ByteArray?, off: Int, len: Int): Int {
@@ -68,9 +67,7 @@ class Win32PipeInputStream(private val pipe: WinNT.HANDLE) : InputStream() {
         return x.value
     }
 
-    override fun close() {
-        Kernel32.INSTANCE.CloseHandle(pipe)
-    }
+    override fun close() = Kernel32.INSTANCE.CloseHandle(pipe).let {}
 }
 
 class Win32PipeOutputStream(private val pipe: WinNT.HANDLE) : OutputStream() {
@@ -86,7 +83,5 @@ class Win32PipeOutputStream(private val pipe: WinNT.HANDLE) : OutputStream() {
         if (x.value != len) throw IOException("Can't write in PipeOutputStream ${x.value} $len")
     }
 
-    override fun close() {
-        Kernel32.INSTANCE.CloseHandle(pipe)
-    }
+    override fun close() = Kernel32.INSTANCE.CloseHandle(pipe).let {}
 }

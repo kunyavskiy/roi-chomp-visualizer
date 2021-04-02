@@ -1,5 +1,8 @@
+@file:Suppress("FunctionName")
+
 import androidx.compose.desktop.Window
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
@@ -16,10 +19,6 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import java.io.File
 import javax.swing.JFileChooser
-
-fun String.isInt() = try {
-    toInt(); true; } catch (ignored: NumberFormatException) {
-    false; }
 
 fun main() = visualizerMain()
 
@@ -53,7 +52,7 @@ fun IntTextField(state: MutableState<String>, label: String) {
         state.value,
         onValueChange = { state.value = it },
         singleLine = true,
-        isErrorValue = !state.value.isInt(),
+        isErrorValue = !(state.value.toIntOrNull() != null),
         label = { Text(label) }
     )
 }
@@ -66,14 +65,11 @@ fun ConstTextField(value: String) {
     )
 }
 
-fun visualizerMain() = Window(title = "Визуализатор для задачи Игра с тайным смыслом", size = IntSize(600, 600)) {
+fun visualizerMain() = Window(title = "Визуализатор для задачи «Игра с тайным смыслом»", size = IntSize(600, 600)) {
     val game = remember { mutableStateOf<GameManager?>(null) }
     val fieldSize = remember { mutableStateOf("32") }
-    val isFieldSizeValid = fieldSize.value.isInt()
     val maxEaten = remember { mutableStateOf("5") }
-    val isMaxEatenValid = maxEaten.value.isInt()
     val secretLength = remember { mutableStateOf("100") }
-    val isSecretLengthValid = secretLength.value.isInt()
     val drawMutex = remember { Mutex() }
     val needDrawGame = remember { mutableStateOf(false) }
     val logFilePath = remember { mutableStateOf<String?>(null) }
@@ -96,41 +92,40 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
             if (game.value == null) {
                 IntTextField(fieldSize, "Размер поля")
                 IntTextField(maxEaten, "Максимум клеток за ход бота")
-                IntTextField(secretLength, "Длина очень важного секерета")
+                IntTextField(secretLength, "Длина очень важного секрета")
                 Button(
                     {
-                        if (game.value == null) {
-                            game.value = GameManager(
-                                fieldSize.value.toInt(),
-                                maxEaten.value.toInt(),
-                                secretLength.value.toInt(),
-                                drawMutex,
-                                needDrawGame.value
-                            )
-                            GlobalScope.launch { game.value?.run() }
-                        }
+                        if (game.value != null) return@Button
+                        game.value = GameManager(
+                            fieldSize.value.toInt(),
+                            maxEaten.value.toInt(),
+                            secretLength.value.toInt(),
+                            drawMutex,
+                            needDrawGame.value
+                        )
+                        GlobalScope.launch { game.value?.runGame() }
                     },
-                    enabled = game.value == null && isFieldSizeValid && isMaxEatenValid && isSecretLengthValid
+                    enabled = sequenceOf(fieldSize, maxEaten, secretLength).all { it.value.toIntOrNull() != null }
                 ) { Text("Начать игру") }
                 Row {
                     Checkbox(
                         needDrawGame.value,
                         { needDrawGame.value = it }
                     )
-                    Text("Визуализировать игру")
+                    Text("Визуализировать игру", modifier = Modifier.clickable { needDrawGame.value = !needDrawGame.value })
                 }
             } else {
                 game.value?.apply {
                     if (!ready.value) {
                         val outputName = getPipePrefix() + outputFileName
                         val inputName = getPipePrefix() + inputFileName
-                        Text("Ожидание решения")
-                        Text("Решение должно считывать из файла:" + outputName)
-                        Text("Решение должно выводить в файл:" + inputName)
-                        Text("Пример кода для открытия файлов для:")
-                        val langs = listOf("C++", "Java", "Python")
-                        val selectedLanguage = remember { mutableStateOf(langs[0]) }
-                        langs.forEach {
+                        Text(" Ожидание решения")
+                        Text(" Решение должно считывать из файла: $outputName")
+                        Text(" Решение должно выводить в файл: $inputName")
+                        Text(" Пример кода для открытия файлов для:")
+                        val languages = listOf("C++", "Java", "Python")
+                        val selectedLanguage = remember { mutableStateOf(languages[0]) }
+                        languages.forEach {
                             Row {
                                 RadioButton(
                                     onClick = { selectedLanguage.value = it },
@@ -140,28 +135,28 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
                             }
                         }
                         val outputFileNameEncoded = outputName.replace("\\", "\\\\")
-                        val inputfileNameEncoded = inputName.replace("\\", "\\\\")
+                        val inputFileNameEncoded = inputName.replace("\\", "\\\\")
                         when (selectedLanguage.value) {
                             "C++" -> {
                                 ConstTextField(
                                     """
-                                        freopen("${outputFileNameEncoded}, "r", stdin);
-                                        freopen("${inputfileNameEncoded}", "w", stdout);
+                                        freopen("$outputFileNameEncoded", "r", stdin);
+                                        freopen("$inputFileNameEncoded", "w", stdout);
                                     """.trimIndent()
                                 )
                                 Text("или")
                                 ConstTextField(
                                     """
-                                        ifstream in("${outputFileNameEncoded}");
-                                        ofstream out("${inputfileNameEncoded}");
+                                        ifstream in("$outputFileNameEncoded");
+                                        ofstream out("$inputFileNameEncoded");
                                     """.trimIndent()
                                 )
                             }
                             "Java" -> {
                                 ConstTextField(
                                     """
-                                        File inputFile = new File("${outputFileNameEncoded}");
-                                        File outputFile = new File("${inputfileNameEncoded}");
+                                        File inputFile = new File("$outputFileNameEncoded");
+                                        File outputFile = new File("$inputFileNameEncoded");
                                         Scanner in = new Scanner(inputFile);
                                         PrintWriter out = new PrintWriter(outputFile); 
                                     """.trimIndent()
@@ -170,8 +165,8 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
                             "Python" -> {
                                 ConstTextField(
                                     """
-                                        inputFile = open("${outputFileNameEncoded}", "r");
-                                        outputFile = open("${inputfileNameEncoded}", "w");
+                                        inputFile = open("$outputFileNameEncoded", "r");
+                                        outputFile = open("$inputFileNameEncoded", "w");
                                     """.trimIndent()
                                 )
 
@@ -200,7 +195,7 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
                                 },
                                 enabled = logFilePath.value != null && secretFilePath.value != null
                             ) { Text("Сохранить") }
-                            Button({ game.value = null }) { Text("Не Сохранять") }
+                            Button({ game.value = null }) { Text("Не сохранять") }
                         }
                     } else if (needDrawGame.value) {
                         Canvas(Modifier.fillMaxSize()) {
@@ -217,7 +212,6 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
 }
 
 private fun GameManager.drawGameState(canvas: DrawScope) = with(canvas) {
-    System.err.println("redraw")
     val n = fieldSize
     try {
         for (i in 0..n) {
@@ -261,6 +255,6 @@ private fun GameManager.drawGameState(canvas: DrawScope) = with(canvas) {
                 color = Color.Black
             )
         }
-    } catch (ignored: Exception) {
+    } catch (_: Exception) {
     }
 }
