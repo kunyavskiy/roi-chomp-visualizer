@@ -56,8 +56,7 @@ class Win32PipeInputStream(private val pipe: WinNT.HANDLE) : InputStream() {
         return if (read(b) == -1) -1 else 0xFF and b[0].toInt()
     }
 
-    override fun read(b: ByteArray?, off: Int, len: Int): Int {
-        b!!
+    override fun read(b: ByteArray, off: Int, len: Int): Int {
         val localBuffer = if (off == 0 && b.size == len) b else ByteArray(len)
         val x = IntByReference()
         val res = Kernel32.INSTANCE.ReadFile(pipe, localBuffer, len, x, null)
@@ -67,7 +66,9 @@ class Win32PipeInputStream(private val pipe: WinNT.HANDLE) : InputStream() {
         return x.value
     }
 
-    override fun close() = Kernel32.INSTANCE.CloseHandle(pipe).let {}
+    override fun close() {
+        Kernel32.INSTANCE.CloseHandle(pipe)
+    }
 }
 
 class Win32PipeOutputStream(private val pipe: WinNT.HANDLE) : OutputStream() {
@@ -75,13 +76,14 @@ class Win32PipeOutputStream(private val pipe: WinNT.HANDLE) : OutputStream() {
         write(byteArrayOf((0xFF and b).toByte()))
     }
 
-    override fun write(b: ByteArray?, off: Int, len: Int) {
-        b!!
+    override fun write(b: ByteArray, off: Int, len: Int) {
         val toWrite = if (off == 0 && len == b.size) b else b.slice(off until off + len).toByteArray()
         val x = IntByReference()
         Kernel32.INSTANCE.WriteFile(pipe, toWrite, len, x, null)
         if (x.value != len) throw IOException("Can't write in PipeOutputStream ${x.value} $len")
     }
 
-    override fun close() = Kernel32.INSTANCE.CloseHandle(pipe).let {}
+    override fun close() {
+        Kernel32.INSTANCE.CloseHandle(pipe)
+    }
 }

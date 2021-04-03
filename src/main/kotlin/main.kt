@@ -1,30 +1,25 @@
 @file:Suppress("FunctionName")
 
-import androidx.compose.desktop.Window
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.clickable
+import androidx.compose.desktop.*
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.unit.IntSize
+import androidx.compose.runtime.*
+import androidx.compose.ui.*
+import androidx.compose.ui.geometry.*
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.drawscope.*
+import androidx.compose.ui.unit.*
 import kotlinx.coroutines.*
-import kotlinx.coroutines.sync.Mutex
-import java.io.File
-import javax.swing.JFileChooser
+import kotlinx.coroutines.sync.*
+import java.io.*
+import javax.swing.*
 
 fun main() = visualizerMain()
 
 @Composable
 fun TextFieldWithChooseFileButton(label: String, filePath: MutableState<String?>) {
-    Row {
+    Row (verticalAlignment = Alignment.CenterVertically){
         TextField(
             filePath.value ?: "",
             onValueChange = { filePath.value = it },
@@ -52,7 +47,7 @@ fun IntTextField(state: MutableState<String>, label: String) {
         state.value,
         onValueChange = { state.value = it },
         singleLine = true,
-        isErrorValue = state.value.toIntOrNull() == null,
+        isError = state.value.toIntOrNull() == null,
         label = { Text(label) }
     )
 }

@@ -1,11 +1,11 @@
-import org.jetbrains.compose.compose
-import org.jetbrains.compose.desktop.application.dsl.TargetFormat
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.gradle.jvm.tasks.Jar
+import org.jetbrains.compose.*
+import org.jetbrains.compose.desktop.application.dsl.*
+import org.jetbrains.kotlin.gradle.tasks.*
 
 plugins {
-    kotlin("jvm") version "1.4.20"
-    id("org.jetbrains.compose") version "0.2.0-build132"
+    kotlin("jvm") version "1.4.30"
+    id("org.jetbrains.compose") version "0.3.0"
 }
 
 group = "me.pavel"
