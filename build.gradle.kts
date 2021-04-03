@@ -19,11 +19,13 @@ repositories {
 }
 
 dependencies {
-    implementation(compose.desktop.currentOs)
+    implementation(compose.desktop.windows_x64)
+    implementation(compose.desktop.linux_x64)
+    implementation(compose.desktop.macos)
     implementation(kotlin("stdlib"))
     implementation("org.jetbrains.compose.material:material:")
     implementation("net.java.dev.jna:jna-platform:5.8.0")
-    //implementation("org.jetbrains.skija:skija-macos:0.89.0") - some magic to fix macos build
+    implementation("org.jetbrains.skija:skija-macos:0.89.0")
 }
 
 tasks.withType<KotlinCompile>() {
