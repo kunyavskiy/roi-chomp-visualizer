@@ -1,20 +1,18 @@
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.*
 import kotlinx.coroutines.*
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import java.io.BufferedReader
-import java.io.PrintWriter
-import kotlin.random.Random
+import kotlinx.coroutines.sync.*
+import java.io.*
+import kotlin.random.*
 
 class BadMoveException(message: String?) : Exception(message)
 
 @Suppress("BlockingMethodInNonBlockingContext")
 class GameManager(
-        val fieldSize: Int,
-        private val maxEatenByRandom: Int,
-        private val secretLength: Int,
-        private val drawMutex: Mutex,
-        private val needDelays: Boolean
+    val fieldSize: Int,
+    private val maxEatenByRandom: Int,
+    private val secretLength: Int,
+    private val drawMutex: Mutex,
+    private val needDelays: Boolean
 ) {
     val ready = mutableStateOf(false)
     val inputFileName = "game.out"
@@ -29,52 +27,46 @@ class GameManager(
     private val gameLogArray = mutableListOf<Pair<Int, Int>>()
 
     suspend fun runGame() {
-        coroutineScope {
+        withContext(Dispatchers.IO) {
             launch {
-                withContext(Dispatchers.IO) {
-                    output = PrintWriter(createOutputPipe(outputFileName))
-                }
+                output = PrintWriter(createOutputPipe(outputFileName))
             }
             launch {
-                withContext(Dispatchers.IO) {
-                    input = createInputPipe(inputFileName).bufferedReader()
-                }
+                input = createInputPipe(inputFileName).bufferedReader()
             }
         }
         ready.value = true
-        GlobalScope.launch {
-            withContext(Dispatchers.IO) {
-                try {
-                    val output = output!!
-                    val input = input!!
-                    output.println("1 $fieldSize $maxEatenByRandom $secretLength")
-                    secret = Array(secretLength) { rnd.nextInt(2) }.joinToString("")
-                    output.println(secret!!)
-                    output.flush()
-                    var firstMove = true
-                    var games = 0
-                    while (runOneGame(input, output, firstMove)) {
-                        games += 1
-                        firstMove = !firstMove
-                        runBlocking {
-                            drawMutex.withLock {
-                                for (i in 0 until fieldSize) {
-                                    columnHeights[i].value = fieldSize
-                                }
+        withContext(Dispatchers.IO) {
+            try {
+                val output = output!!
+                val input = input!!
+                output.println("1 $fieldSize $maxEatenByRandom $secretLength")
+                secret = Array(secretLength) { rnd.nextInt(2) }.joinToString("")
+                output.println(secret!!)
+                output.flush()
+                var firstMove = true
+                var games = 0
+                while (runOneGame(input, output, firstMove)) {
+                    games += 1
+                    firstMove = !firstMove
+                    runBlocking {
+                        drawMutex.withLock {
+                            for (i in 0 until fieldSize) {
+                                columnHeights[i].value = fieldSize
                             }
                         }
                     }
-                    val builder = StringBuilder()
-                    builder.append("2 $fieldSize $maxEatenByRandom $secretLength").append(System.lineSeparator())
-                    builder.append(games).append(System.lineSeparator())
-                    builder.append(gameLogArray.joinToString(System.lineSeparator()) { "${it.first} ${it.second}" })
-                    gameLog.value = builder.toString()
-                } catch (e: Exception) {
-                    gameError.value = e.message ?: "Неизвестная ошибка"
-                } finally {
-                    input?.close()
-                    output?.close()
                 }
+                val builder = StringBuilder()
+                builder.append("2 $fieldSize $maxEatenByRandom $secretLength").append(System.lineSeparator())
+                builder.append(games).append(System.lineSeparator())
+                builder.append(gameLogArray.joinToString(System.lineSeparator()) { "${it.first} ${it.second}" })
+                gameLog.value = builder.toString()
+            } catch (e: Exception) {
+                gameError.value = e.message ?: "Неизвестная ошибка"
+            } finally {
+                input?.close()
+                output?.close()
             }
         }
     }
@@ -101,6 +93,7 @@ class GameManager(
         return false
     }
 
+    @OptIn(ExperimentalStdlibApi::class)
     private suspend fun runOneGame(input: BufferedReader, output: PrintWriter, firstMove: Boolean): Boolean {
         var move = firstMove
         var firstPlayerMove = true
@@ -125,13 +118,14 @@ class GameManager(
                     throw BadMoveException("Ожидалось два числа, а решение вывело \"$line\"")
                 }
             } else {
-
-                val possibleMoves = (0 until fieldSize).asSequence().flatMap { x ->
-                    (0 until columnHeights[x].value).reversed().asSequence().map { Pair(x, it) }.takeWhile {
-                        it != Pair(0, 0) && !eatenMoreThan(it.first, it.second, maxEatenByRandom)
+                val randomMove = sequence {
+                    for (x in 0 until fieldSize) {
+                        for (y in columnHeights[x].value - 1 downTo 0) {
+                            if ((x == 0 && y == 0) || eatenMoreThan(x, y, maxEatenByRandom)) break
+                            yield(Pair(x, y))
+                        }
                     }
-                }.toList()
-                val randomMove = possibleMoves.randomOrNull(rnd) ?: Pair(0, 0)
+                }.foldIndexed(Pair(0, 0), { i, acc, value -> if (rnd.nextInt(i + 1) == 0) value else acc})
                 processMove(randomMove.first, randomMove.second)
                 output.println("${randomMove.first + 1} ${randomMove.second + 1}")
                 output.flush()
