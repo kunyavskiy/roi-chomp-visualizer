@@ -60,7 +60,11 @@ class Win32PipeInputStream(private val pipe: WinNT.HANDLE) : InputStream() {
         val localBuffer = if (off == 0 && b.size == len) b else ByteArray(len)
         val x = IntByReference()
         val res = Kernel32.INSTANCE.ReadFile(pipe, localBuffer, len, x, null)
-        if (!res) throw IOException("Can't read in PipeInputStream")
+        if (!res) {
+            val readError = Kernel32.INSTANCE.GetLastError()
+            if (readError == Kernel32.ERROR_BROKEN_PIPE) return -1
+            throw IOException("Can't read in PipeInputStream")
+        }
         if (x.value == 0) return -1
         if (localBuffer !== b) System.arraycopy(localBuffer, 0, b, off, x.value)
         return x.value
