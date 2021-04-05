@@ -21,6 +21,8 @@ class GameManager(
     val gameLog = mutableStateOf<String?>(null)
     var secret: String? = null
     val gameError = mutableStateOf<String?>(null)
+    var gamesPlayed = 0
+    var gamesWon = 0
     private var input: BufferedReader? = null
     private var output: PrintWriter? = null
     private val rnd = Random(239)
@@ -135,7 +137,27 @@ class GameManager(
             }
             move = !move
         }
+        gamesPlayed += 1
+        if (move) {
+            gamesWon += 1
+        }
         return true
     }
+
+     fun getScore() : Double {
+         val bounds = arrayOf(0, 10, 100, 200, 400, 525, 666, 833, 950, 1050)
+         val W = if (gamesPlayed >= gamesWon - 1) 1 else 0
+         val m = secret!!.length;
+         if (m >= bounds.last() * gamesPlayed) {
+             return 9f + W.toDouble()
+         } else {
+             for (i in bounds.size - 2 downTo 0) {
+                 if (m > bounds[i] * gamesPlayed) {
+                     return i + (m.toDouble() / gamesPlayed - bounds[i]) / (bounds[i + 1] - bounds[i]);
+                 }
+             }
+         }
+         throw AssertionError()
+     }
 }
 

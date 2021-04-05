@@ -61,56 +61,54 @@ fun ConstTextField(value: String) {
 }
 
 fun visualizerMain() = Window(title = "Визуализатор для задачи «Игра с тайным смыслом»", size = IntSize(600, 600)) {
-    val game = remember { mutableStateOf<GameManager?>(null) }
+    var game by remember { mutableStateOf<GameManager?>(null) }
     val fieldSize = remember { mutableStateOf("32") }
     val maxEaten = remember { mutableStateOf("5") }
     val secretLength = remember { mutableStateOf("100") }
     val drawMutex = remember { Mutex() }
-    val needDrawGame = remember { mutableStateOf(true) }
-    val logFilePath = remember { mutableStateOf<String?>(null) }
-    val secretFilePath = remember { mutableStateOf<String?>(null) }
-    val errorMessage = remember { mutableStateOf<String?>(null) }
+    var needDrawGame by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     runBlocking {
         drawMutex.lock()
     }
     MaterialTheme {
-        if (errorMessage.value != null) {
+        if (errorMessage != null) {
             AlertDialog(
-                onDismissRequest = { errorMessage.value = null },
-                text = { errorMessage.value?.apply { Text(this@apply) } },
+                onDismissRequest = { errorMessage = null },
+                text = { errorMessage?.apply { Text(this@apply) } },
                 title = { Text("Ошибка") },
                 buttons = {}
             )
         }
         Column {
-            if (game.value == null) {
+            if (game == null) {
                 IntTextField(fieldSize, "Размер поля")
                 IntTextField(maxEaten, "Максимум клеток за ход бота")
                 IntTextField(secretLength, "Длина очень важного секрета")
                 Button(
                     {
-                        if (game.value != null) return@Button
-                        game.value = GameManager(
+                        if (game != null) return@Button
+                        game = GameManager(
                             fieldSize.value.toInt(),
                             maxEaten.value.toInt(),
                             secretLength.value.toInt(),
                             drawMutex,
-                            needDrawGame.value
+                            needDrawGame
                         )
-                        GlobalScope.launch { game.value?.runGame() }
+                        GlobalScope.launch { game?.runGame() }
                     },
                     enabled = sequenceOf(fieldSize, maxEaten, secretLength).all { it.value.toIntOrNull() != null }
                 ) { Text("Начать игру") }
                 Row {
                     Checkbox(
-                        needDrawGame.value,
-                        { needDrawGame.value = it }
+                        needDrawGame,
+                        { needDrawGame = it }
                     )
-                    Text("Визуализировать игру", modifier = Modifier.clickable { needDrawGame.value = !needDrawGame.value })
+                    Text("Визуализировать игру", modifier = Modifier.clickable { needDrawGame = !needDrawGame })
                 }
             } else {
-                game.value?.apply {
+                game?.apply {
                     if (!ready.value) {
                         val outputName = getPipePrefix() + outputFileName
                         val inputName = getPipePrefix() + inputFileName
@@ -119,19 +117,19 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
                         Text(" Решение должно выводить в файл: $inputName")
                         Text(" Пример кода для открытия файлов для:")
                         val languages = listOf("C++", "Java", "Python")
-                        val selectedLanguage = remember { mutableStateOf(languages[0]) }
+                        var selectedLanguage by remember { mutableStateOf(languages[0]) }
                         languages.forEach {
                             Row {
                                 RadioButton(
-                                    onClick = { selectedLanguage.value = it },
-                                    selected = selectedLanguage.value == it
+                                    onClick = { selectedLanguage = it },
+                                    selected = selectedLanguage == it
                                 )
                                 Text(it)
                             }
                         }
                         val outputFileNameEncoded = outputName.replace("\\", "\\\\")
                         val inputFileNameEncoded = inputName.replace("\\", "\\\\")
-                        when (selectedLanguage.value) {
+                        when (selectedLanguage) {
                             "C++" -> {
                                 ConstTextField(
                                     """
@@ -168,9 +166,19 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
                             }
                         }
                     } else if (gameError.value != null) {
-                        errorMessage.value = gameError.value
-                        game.value = null
+                        errorMessage = gameError.value
+                        game = null
                     } else if (gameLog.value != null) {
+                        val played = game!!.gamesPlayed
+                        val won = game!!.gamesWon
+                        Text("Сыграно игр: $played")
+                        Text("Выиграно игр: $won")
+                        if (gamesPlayed > 1) {
+                            Text("В среднем переданно бит за игру: ${secretLength.value.toInt() / gamesPlayed}")
+                            Text("Баллов за тест: ${game!!.getScore()}")
+                        }
+                        val logFilePath = remember { mutableStateOf<String?>(null) }
+                        val secretFilePath = remember { mutableStateOf<String?>(null) }
                         TextFieldWithChooseFileButton("Путь для сохранения лога", logFilePath)
                         TextFieldWithChooseFileButton("Путь для сохранения секрета", secretFilePath)
                         Row {
@@ -184,15 +192,15 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
                                             it.println(secret)
                                         }
                                     } catch (e: Exception) {
-                                        errorMessage.value = e.message
+                                        errorMessage = e.message
                                     }
-                                    game.value = null
+                                    game = null
                                 },
                                 enabled = logFilePath.value != null && secretFilePath.value != null
                             ) { Text("Сохранить") }
-                            Button({ game.value = null }) { Text("Не сохранять") }
+                            Button({ game = null }) { Text("Не сохранять") }
                         }
-                    } else if (needDrawGame.value) {
+                    } else if (needDrawGame) {
                         Canvas(Modifier.fillMaxSize()) {
                             this@apply.drawGameState(this)
                         }
