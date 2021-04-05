@@ -117,7 +117,7 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
                         Text(" Решение должно считывать из файла: $outputName")
                         Text(" Решение должно выводить в файл: $inputName")
                         Text(" Пример кода для открытия файлов для:")
-                        val languages = listOf("C++", "Java", "Python")
+                        val languages = listOf("C++", "Java", "Python", "Pascal")
                         var selectedLanguage by remember { mutableStateOf(languages[0]) }
                         languages.forEach {
                             Row {
@@ -163,7 +163,16 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
                                         outputFile = open("$inputFileNameEncoded", "w");
                                     """.trimIndent()
                                 )
-
+                            }
+                            "Pascal" -> {
+                                ConstTextField(
+                                    """
+                                        AssignFile(input, '$outputName');
+                                        Reset(input);
+                                        AssignFile(output, '$inputName');
+                                        Rewrite(output);
+                                    """.trimIndent()
+                                )
                             }
                         }
                     } else if (gameError.value != null) {
