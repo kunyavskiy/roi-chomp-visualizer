@@ -12,7 +12,8 @@ class GameManager(
     private val maxEatenByRandom: Int,
     private val secretLength: Int,
     private val drawMutex: Mutex,
-    private val needDelays: Boolean
+    private val needDelays: Boolean,
+    private val gameSpeed: MutableState<Float>
 ) {
     val ready = mutableStateOf(false)
     val inputFileName = "game.out"
@@ -67,7 +68,12 @@ class GameManager(
                 builder.append(gameLogArray.joinToString(System.lineSeparator()) { "${it.first} ${it.second}" })
                 gameLog.value = builder.toString()
             } catch (e: Exception) {
-                gameError.value = e.message ?: "Неизвестная ошибка"
+                if (e !is CancellationException) {
+                    gameError.value = e.message ?: "Неизвестная ошибка"
+                } else {
+                    cleanupPipeOnCalcel(inputFileName)
+                    cleanupPipeOnCalcel(outputFileName)
+                }
             } finally {
                 input?.close()
                 output?.close()
@@ -134,7 +140,7 @@ class GameManager(
                 output.println("${randomMove.first + 1} ${randomMove.second + 1}")
                 output.flush()
                 if (needDelays) {
-                    delay(30)
+                    delay((1000.0 / gameSpeed.value).toLong())
                 }
             }
             move = !move

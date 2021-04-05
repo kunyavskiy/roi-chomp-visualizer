@@ -60,44 +60,47 @@ fun ConstTextField(value: String) {
     )
 }
 
-fun visualizerMain() = Window(title = "Визуализатор для задачи «Игра с тайным смыслом»", size = IntSize(600, 600)) {
-    var game by remember { mutableStateOf<GameManager?>(null) }
+
+fun visualizerMain() = Window(title = "Визуализатор для задачи «Игра с тайным смыслом»", size = IntSize(600, 700)) {
+    val game = remember { mutableStateOf<GameManager?>(null) }
     val fieldSize = remember { mutableStateOf("32") }
     val maxEaten = remember { mutableStateOf("8") }
     val secretLength = remember { mutableStateOf("100") }
     val drawMutex = remember { Mutex() }
     var needDrawGame by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var job by remember { mutableStateOf<Job?>(null) }
+    val gameSpeed = remember { mutableStateOf(30f) }
+
+    fun startNewGame() {
+        job?.cancel()
+        runBlocking {
+            job?.join()
+        }
+        errorMessage = null
+        game.value = GameManager(
+            fieldSize.value.toInt(),
+            maxEaten.value.toInt(),
+            secretLength.value.toInt(),
+            drawMutex,
+            needDrawGame,
+            gameSpeed
+        )
+        job = GlobalScope.launch { game.value?.runGame() }
+    }
 
     runBlocking {
         drawMutex.lock()
     }
     MaterialTheme {
-        if (errorMessage != null) {
-            Column {
-                errorMessage?.apply { Text(this@apply) }
-                Button(
-                    onClick = { errorMessage = null },
-                ) { Text("Начать заново") }
-            }
-            return@MaterialTheme
-        }
         Column {
-            if (game == null) {
+            if (game.value == null || game.value!!.gameLog.value != null) {
                 IntTextField(fieldSize, "Размер поля")
                 IntTextField(maxEaten, "Максимум клеток за ход бота")
                 IntTextField(secretLength, "Длина очень важного секрета")
                 Button(
                     {
-                        if (game != null) return@Button
-                        game = GameManager(
-                            fieldSize.value.toInt(),
-                            maxEaten.value.toInt(),
-                            secretLength.value.toInt(),
-                            drawMutex,
-                            needDrawGame
-                        )
-                        GlobalScope.launch { game?.runGame() }
+                        startNewGame()
                     },
                     enabled = sequenceOf(fieldSize, maxEaten, secretLength).all { it.value.toIntOrNull() != null }
                 ) { Text("Начать игру") }
@@ -108,115 +111,127 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
                     )
                     Text("Визуализировать игру", modifier = Modifier.clickable { needDrawGame = !needDrawGame })
                 }
-            } else {
-                game?.apply {
-                    if (!ready.value) {
-                        val outputName = getPipePrefix() + outputFileName
-                        val inputName = getPipePrefix() + inputFileName
-                        Text(" Ожидание решения")
-                        Text(" Решение должно считывать из файла: $outputName")
-                        Text(" Решение должно выводить в файл: $inputName")
-                        Text(" Пример кода для открытия файлов для:")
-                        val languages = listOf("C++", "Java", "Python", "Pascal")
-                        var selectedLanguage by remember { mutableStateOf(languages[0]) }
-                        languages.forEach {
-                            Row {
-                                RadioButton(
-                                    onClick = { selectedLanguage = it },
-                                    selected = selectedLanguage == it
-                                )
-                                Text(it)
-                            }
+            }
+            game.value?.apply {
+                if (!ready.value) {
+                    val outputName = getPipePrefix() + outputFileName
+                    val inputName = getPipePrefix() + inputFileName
+                    Text(" Ожидание решения")
+                    Text(" Решение должно считывать из файла: $outputName")
+                    Text(" Решение должно выводить в файл: $inputName")
+                    Text(" Пример кода для открытия файлов для:")
+                    val languages = listOf("C++", "Java", "Python", "Pascal")
+                    var selectedLanguage by remember { mutableStateOf(languages[0]) }
+                    languages.forEach {
+                        Row {
+                            RadioButton(
+                                onClick = { selectedLanguage = it },
+                                selected = selectedLanguage == it
+                            )
+                            Text(it)
                         }
-                        val outputFileNameEncoded = outputName.replace("\\", "\\\\")
-                        val inputFileNameEncoded = inputName.replace("\\", "\\\\")
-                        when (selectedLanguage) {
-                            "C++" -> {
-                                ConstTextField(
-                                    """
+                    }
+                    val outputFileNameEncoded = outputName.replace("\\", "\\\\")
+                    val inputFileNameEncoded = inputName.replace("\\", "\\\\")
+                    when (selectedLanguage) {
+                        "C++" -> {
+                            ConstTextField(
+                                """
                                         freopen("$outputFileNameEncoded", "r", stdin);
                                         freopen("$inputFileNameEncoded", "w", stdout);
                                     """.trimIndent()
-                                )
-                                Text("или")
-                                ConstTextField(
-                                    """
+                            )
+                            Text("или")
+                            ConstTextField(
+                                """
                                         ifstream in("$outputFileNameEncoded");
                                         ofstream out("$inputFileNameEncoded");
                                     """.trimIndent()
-                                )
-                            }
-                            "Java" -> {
-                                ConstTextField(
-                                    """
+                            )
+                        }
+                        "Java" -> {
+                            ConstTextField(
+                                """
                                         File inputFile = new File("$outputFileNameEncoded");
                                         File outputFile = new File("$inputFileNameEncoded");
                                         Scanner in = new Scanner(inputFile);
                                         PrintWriter out = new PrintWriter(outputFile); 
                                     """.trimIndent()
-                                )
-                            }
-                            "Python" -> {
-                                ConstTextField(
-                                    """
+                            )
+                        }
+                        "Python" -> {
+                            ConstTextField(
+                                """
                                         inputFile = open("$outputFileNameEncoded", "r");
                                         outputFile = open("$inputFileNameEncoded", "w");
                                     """.trimIndent()
-                                )
-                            }
-                            "Pascal" -> {
-                                ConstTextField(
-                                    """
+                            )
+                        }
+                        "Pascal" -> {
+                            ConstTextField(
+                                """
                                         AssignFile(input, '$outputName');
                                         Reset(input);
                                         AssignFile(output, '$inputName');
                                         Rewrite(output);
                                     """.trimIndent()
-                                )
-                            }
+                            )
                         }
-                    } else if (gameError.value != null) {
-                        errorMessage = gameError.value
-                        game = null
-                    } else if (gameLog.value != null) {
-                        val played = game!!.gamesPlayed
-                        val won = game!!.gamesWon
-                        Text("Сыграно игр: $played")
-                        Text("Выиграно игр: $won")
-                        if (gamesPlayed > 1) {
-                            Text("В среднем переданно бит за игру: ${secretLength.value.toDouble() / gamesPlayed}")
-                            Text("Баллов за тест: ${game!!.getScore()}")
-                        }
-                        val logFilePath = remember { mutableStateOf<String?>(null) }
-                        val secretFilePath = remember { mutableStateOf<String?>(null) }
-                        TextFieldWithChooseFileButton("Путь для сохранения лога", logFilePath)
-                        TextFieldWithChooseFileButton("Путь для сохранения секрета", secretFilePath)
-                        Row {
-                            Button(
-                                onClick = {
-                                    try {
-                                        File(logFilePath.value!!).printWriter().use {
-                                            it.println(gameLog.value)
-                                        }
-                                        File(secretFilePath.value!!).printWriter().use {
-                                            it.println(secret)
-                                        }
-                                    } catch (e: Exception) {
-                                        errorMessage = e.message
-                                    }
-                                    game = null
-                                },
-                                enabled = logFilePath.value != null && secretFilePath.value != null
-                            ) { Text("Сохранить") }
-                            Button({ game = null }) { Text("Не сохранять") }
-                        }
-                    } else if (needDrawGame) {
-                        Canvas(Modifier.fillMaxSize()) {
-                            this@apply.drawGameState(this)
-                        }
-                    } else {
-                        Text("Ожидаем работы решения")
                     }
+                } else if (gameError.value != null) {
+                    errorMessage = gameError.value
+                    gameError.value = null
+                } else if (gameLog.value != null) {
+                    val played = game.value!!.gamesPlayed
+                    val won = game.value!!.gamesWon
+                    Text("Сыграно игр: $played")
+                    Text("Выиграно игр: $won")
+                    if (gamesPlayed > 1) {
+                        Text("В среднем переданно бит за игру: ${secretLength.value.toDouble() / gamesPlayed}")
+                        Text("Баллов за тест: ${game.value!!.getScore()}")
+                    }
+                    val logFilePath = remember { mutableStateOf<String?>(null) }
+                    val secretFilePath = remember { mutableStateOf<String?>(null) }
+                    TextFieldWithChooseFileButton("Путь для сохранения лога", logFilePath)
+                    TextFieldWithChooseFileButton("Путь для сохранения секрета", secretFilePath)
+                    Row {
+                        Button(
+                            onClick = {
+                                try {
+                                    File(logFilePath.value!!).printWriter().use {
+                                        it.println(gameLog.value)
+                                    }
+                                    File(secretFilePath.value!!).printWriter().use {
+                                        it.println(secret)
+                                    }
+                                } catch (e: Exception) {
+                                    errorMessage = e.message
+                                }
+                                game.value = null
+                            },
+                            enabled = logFilePath.value != null && secretFilePath.value != null
+                        ) { Text("Сохранить") }
+                    }
+                } else if (needDrawGame || errorMessage != null) {
+                    Canvas(Modifier.size(Dp(600f), Dp(600f))) {
+                        this@apply.drawGameState(this)
+                    }
+                    Column {
+                        Row {
+                            Slider(
+                                value = gameSpeed.value,
+                                valueRange = 1f..100f,
+                                onValueChange = { gameSpeed.value = it },
+                                modifier = Modifier.weight(0.7f)
+                            )
+                            Button({
+                                startNewGame()
+                            }) { Text("Начать заново") }
+                        }
+                        errorMessage?.apply { Text("Ошибка: $this") }
+                    }
+                } else {
+                    Text("Ожидаем работы решения")
                 }
             }
         }

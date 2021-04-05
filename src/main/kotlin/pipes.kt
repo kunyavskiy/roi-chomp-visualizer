@@ -26,6 +26,13 @@ fun createOutputPipe(name: String): OutputStream {
     }
 }
 
+fun cleanupPipeOnCalcel(name: String) {
+    if (!Platform.isWindows()) {
+        File(getPipePrefix() + name).delete()
+        createLinuxPipe(name)
+    }
+}
+
 fun createLinuxPipe(name: String): File {
     val fullName = getPipePrefix() + name
     val file = File(fullName)
