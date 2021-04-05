@@ -63,7 +63,7 @@ fun ConstTextField(value: String) {
 fun visualizerMain() = Window(title = "Визуализатор для задачи «Игра с тайным смыслом»", size = IntSize(600, 600)) {
     var game by remember { mutableStateOf<GameManager?>(null) }
     val fieldSize = remember { mutableStateOf("32") }
-    val maxEaten = remember { mutableStateOf("5") }
+    val maxEaten = remember { mutableStateOf("8") }
     val secretLength = remember { mutableStateOf("100") }
     val drawMutex = remember { Mutex() }
     var needDrawGame by remember { mutableStateOf(true) }
@@ -74,12 +74,13 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
     }
     MaterialTheme {
         if (errorMessage != null) {
-            AlertDialog(
-                onDismissRequest = { errorMessage = null },
-                text = { errorMessage?.apply { Text(this@apply) } },
-                title = { Text("Ошибка") },
-                buttons = {}
-            )
+            Column {
+                errorMessage?.apply { Text(this@apply) }
+                Button(
+                    onClick = { errorMessage = null },
+                ) { Text("Начать заново") }
+            }
+            return@MaterialTheme
         }
         Column {
             if (game == null) {
@@ -174,7 +175,7 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
                         Text("Сыграно игр: $played")
                         Text("Выиграно игр: $won")
                         if (gamesPlayed > 1) {
-                            Text("В среднем переданно бит за игру: ${secretLength.value.toInt() / gamesPlayed}")
+                            Text("В среднем переданно бит за игру: ${secretLength.value.toDouble() / gamesPlayed}")
                             Text("Баллов за тест: ${game!!.getScore()}")
                         }
                         val logFilePath = remember { mutableStateOf<String?>(null) }
