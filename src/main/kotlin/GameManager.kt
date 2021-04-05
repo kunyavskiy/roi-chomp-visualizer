@@ -139,9 +139,9 @@ class GameManager(
                 processMove(randomMove.first, randomMove.second)
                 output.println("${randomMove.first + 1} ${randomMove.second + 1}")
                 output.flush()
-                if (needDelays) {
-                    delay((1000.0 / gameSpeed.value).toLong())
-                }
+            }
+            if (needDelays) {
+                delay((1000.0 / gameSpeed.value).toLong())
             }
             move = !move
         }

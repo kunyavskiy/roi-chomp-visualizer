@@ -70,7 +70,7 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
     var needDrawGame by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var job by remember { mutableStateOf<Job?>(null) }
-    val gameSpeed = remember { mutableStateOf(30f) }
+    val gameSpeed = remember { mutableStateOf(60f) }
 
     fun stopGame() {
         job?.cancel()
@@ -166,8 +166,8 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
                         "Python" -> {
                             ConstTextField(
                                 """
-                                        inputFile = open("$outputFileNameEncoded", "r");
-                                        outputFile = open("$inputFileNameEncoded", "w");
+                                        sys.stdin = open("$outputFileNameEncoded", "r");
+                                        sys.stdout = open("$inputFileNameEncoded", "w");
                                     """.trimIndent()
                             )
                         }
@@ -198,24 +198,25 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
                     val secretFilePath = remember { mutableStateOf<String?>(null) }
                     TextFieldWithChooseFileButton("Путь для сохранения лога", logFilePath)
                     TextFieldWithChooseFileButton("Путь для сохранения секрета", secretFilePath)
-                    Row {
-                        Button(
-                            onClick = {
-                                try {
-                                    File(logFilePath.value!!).printWriter().use {
-                                        it.println(gameLog.value)
-                                    }
-                                    File(secretFilePath.value!!).printWriter().use {
-                                        it.println(secret)
-                                    }
-                                } catch (e: Exception) {
-                                    errorMessage = e.message
+                    val fileSaveError = remember { mutableStateOf<String?>(null) }
+                    Button(
+                        onClick = {
+                            try {
+                                File(logFilePath.value!!).printWriter().use {
+                                    it.println(gameLog.value)
+                                }
+                                File(secretFilePath.value!!).printWriter().use {
+                                    it.println(secret)
                                 }
                                 game.value = null
-                            },
-                            enabled = logFilePath.value != null && secretFilePath.value != null
-                        ) { Text("Сохранить") }
-                    }
+                                fileSaveError.value = null
+                            } catch (e: Exception) {
+                                fileSaveError.value = e.message
+                            }
+                        },
+                        enabled = logFilePath.value != null && secretFilePath.value != null
+                    ) { Text("Сохранить") }
+                    fileSaveError.value?.apply { Text("Ошибка сохранения: $this") }
                 } else if (needDrawGame || errorMessage != null) {
                     Canvas(Modifier.size(Dp(600f), Dp(600f))) {
                         this@apply.drawGameState(this)
@@ -224,7 +225,7 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
                         Row {
                             Slider(
                                 value = gameSpeed.value,
-                                valueRange = 1f..100f,
+                                valueRange = 1f..200f,
                                 onValueChange = { gameSpeed.value = it },
                                 modifier = Modifier.weight(0.7f)
                             )
