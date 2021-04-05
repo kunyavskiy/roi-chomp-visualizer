@@ -50,7 +50,7 @@ compose.desktop {
 }
 
 val fatJar = task("fatJar", type = Jar::class) {
-    baseName = "${project.name}-fat"
+    baseName = "chomp-visualizer"
     manifest {
         attributes["Main-Class"] = "MainKt"
         attributes["Implementation-Version"] = archiveVersion

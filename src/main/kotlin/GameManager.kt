@@ -42,7 +42,8 @@ class GameManager(
             try {
                 val output = output!!
                 val input = input!!
-                output.println("1 $fieldSize $maxEatenByRandom $secretLength")
+                output.println("1")
+                output.println("$fieldSize $maxEatenByRandom $secretLength")
                 secret = Array(secretLength) { rnd.nextInt(2) }.joinToString("")
                 output.println(secret!!)
                 output.flush()
@@ -60,7 +61,8 @@ class GameManager(
                     }
                 }
                 val builder = StringBuilder()
-                builder.append("2 $fieldSize $maxEatenByRandom $secretLength").append(System.lineSeparator())
+                builder.append("2").append(System.lineSeparator())
+                builder.append("$fieldSize $maxEatenByRandom $secretLength").append(System.lineSeparator())
                 builder.append(games).append(System.lineSeparator())
                 builder.append(gameLogArray.joinToString(System.lineSeparator()) { "${it.first} ${it.second}" })
                 gameLog.value = builder.toString()
