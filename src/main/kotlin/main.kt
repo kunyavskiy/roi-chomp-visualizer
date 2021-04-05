@@ -124,7 +124,7 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
                     Text(" Решение должно считывать из файла: $outputName")
                     Text(" Решение должно выводить в файл: $inputName")
                     Text(" Пример кода для открытия файлов для:")
-                    val languages = listOf("C++", "Java", "Python", "Pascal")
+                    val languages = listOf("C++", "Java", "Python", "Pascal", "C#")
                     var selectedLanguage by remember { mutableStateOf(languages[0]) }
                     languages.forEach {
                         Row {
@@ -178,6 +178,18 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
                                         Reset(input);
                                         AssignFile(output, '$inputName');
                                         Rewrite(output);
+                                    """.trimIndent()
+                            )
+                        }
+                        "C#" -> {
+                            ConstTextField(
+                                """
+                                        var pipeIn = new NamedPipeClientStream(".", "game.in", PipeDirection.In);
+                                        pipeIn.Connect();
+                                        StreamReader reader = new StreamReader(pipeIn);
+                                        var pipeOut = new NamedPipeClientStream(".", "game.out", PipeDirection.Out);
+                                        pipeOut.Connect();
+                                        StreamWriter writer = new StreamWriter(pipeOut);
                                     """.trimIndent()
                             )
                         }
