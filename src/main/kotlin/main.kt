@@ -72,12 +72,16 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
     var job by remember { mutableStateOf<Job?>(null) }
     val gameSpeed = remember { mutableStateOf(30f) }
 
-    fun startNewGame() {
+    fun stopGame() {
         job?.cancel()
         runBlocking {
             job?.join()
         }
         errorMessage = null
+    }
+
+    fun startNewGame() {
+        stopGame()
         game.value = GameManager(
             fieldSize.value.toInt(),
             maxEaten.value.toInt(),
@@ -227,6 +231,10 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
                             Button({
                                 startNewGame()
                             }) { Text("Начать заново") }
+                            Button({
+                                stopGame()
+                                game.value = null
+                            }) { Text("Остановить игру") }
                         }
                         errorMessage?.apply { Text("Ошибка: $this") }
                     }
