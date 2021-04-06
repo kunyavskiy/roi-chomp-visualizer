@@ -378,19 +378,21 @@ private fun GameManager.drawGameState(canvas: DrawScope) = with(canvas) {
                 )
             }
         }
-        val border = 4
-        val lx = lastMove.first
-        val ly = fieldSize - 1 - lastMove.second
-        drawLine(
-            start = Offset(w * lx + border, h * ly + border),
-            end = Offset(w * (lx + 1) - border, h * (ly + 1) - border),
-            color = Color.Black
-        )
-        drawLine(
-            start = Offset(w * lx + border, h * (ly + 1) - border),
-            end = Offset(w * (lx + 1) - border, h * ly + border),
-            color = Color.Black
-        )
+        if (lastMove != Pair(-1, -1)) {
+            val border = 4
+            val lx = lastMove.first
+            val ly = fieldSize - 1 - lastMove.second
+            drawLine(
+                start = Offset(w * lx + border, h * ly + border),
+                end = Offset(w * (lx + 1) - border, h * (ly + 1) - border),
+                color = Color.Black
+            )
+            drawLine(
+                start = Offset(w * lx + border, h * (ly + 1) - border),
+                end = Offset(w * (lx + 1) - border, h * ly + border),
+                color = Color.Black
+            )
+        }
         for (i in 0..n) {
             drawLine(
                 start = Offset(0f, size.height / n * i),
