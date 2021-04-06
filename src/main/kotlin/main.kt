@@ -2,6 +2,7 @@
 
 import androidx.compose.desktop.*
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -9,10 +10,13 @@ import androidx.compose.ui.*
 import androidx.compose.ui.geometry.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.*
+import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.unit.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.*
 import kotlinx.coroutines.sync.*
 import java.io.*
+import java.lang.Math.floor
 import javax.swing.*
 
 fun main() = visualizerMain()
@@ -60,21 +64,38 @@ fun ConstTextField(value: String) {
     )
 }
 
+@Composable
+fun CheckBoxWithText(state: MutableState<Boolean>, label: String) {
+    Row {
+        Checkbox(
+            state.value,
+            { state.value = it }
+        )
+        Text(label, modifier = Modifier.clickable { state.value = !state.value })
+    }
+}
 
-fun visualizerMain() = Window(title = "Визуализатор для задачи «Игра с тайным смыслом»", size = IntSize(600, 700)) {
+
+fun visualizerMain() = Window(title = "Визуализатор для задачи «Игра с тайным смыслом»", size = IntSize(600, 800)) {
     val game = remember { mutableStateOf<GameManager?>(null) }
     val fieldSize = remember { mutableStateOf("32") }
     val maxEaten = remember { mutableStateOf("8") }
     val secretLength = remember { mutableStateOf("100") }
     val drawMutex = remember { Mutex() }
-    var needDrawGame by remember { mutableStateOf(true) }
+    val needDrawGame = remember { mutableStateOf(true) }
+    val playByHand = remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var job by remember { mutableStateOf<Job?>(null) }
     val gameSpeed = remember { mutableStateOf(60f) }
+    var clickerJob by remember { mutableStateOf<Job?>(null) }
+    var clickerChannel by remember { mutableStateOf<Channel<Pair<Int, Int>>?>(null) }
 
     fun stopGame() {
+        clickerChannel?.close()
+        clickerJob?.cancel()
         job?.cancel()
         runBlocking {
+            clickerJob?.join()
             job?.join()
         }
         errorMessage = null
@@ -87,10 +108,16 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
             maxEaten.value.toInt(),
             secretLength.value.toInt(),
             drawMutex,
-            needDrawGame,
+            needDrawGame.value,
             gameSpeed
         )
         job = GlobalScope.launch { game.value?.runGame() }
+        if (playByHand.value) {
+            clickerJob = GlobalScope.launch {
+                clickerChannel = Channel()
+                ClickerSolution(clickerChannel!!).work()
+            }
+        }
     }
 
     runBlocking {
@@ -108,13 +135,8 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
                     },
                     enabled = sequenceOf(fieldSize, maxEaten, secretLength).all { it.value.toIntOrNull() != null }
                 ) { Text("Начать игру") }
-                Row {
-                    Checkbox(
-                        needDrawGame,
-                        { needDrawGame = it }
-                    )
-                    Text("Визуализировать игру", modifier = Modifier.clickable { needDrawGame = !needDrawGame })
-                }
+                CheckBoxWithText(needDrawGame,"Визуализировать игру")
+                CheckBoxWithText(playByHand,"Играть руками")
             }
             game.value?.apply {
                 if (!ready.value) {
@@ -229,8 +251,23 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
                         enabled = logFilePath.value != null && secretFilePath.value != null
                     ) { Text("Сохранить") }
                     fileSaveError.value?.apply { Text("Ошибка сохранения: $this") }
-                } else if (needDrawGame || errorMessage != null) {
-                    Canvas(Modifier.size(Dp(600f), Dp(600f))) {
+                } else if (needDrawGame.value || errorMessage != null) {
+                    Canvas(
+                        Modifier.size(Dp(600f), Dp(600f)).pointerInput(Unit) {
+                            detectTapGestures(
+                                onPress = { offset ->
+                                    runBlocking {
+                                        val n = fieldSize.value.toInt()
+                                        val cellSizeX = size.width.toDouble() / n
+                                        val cellSizeY = size.height.toDouble() / n
+                                        val xCell = floor(offset.x.toDouble() / cellSizeX).toInt() + 1
+                                        val yCell = n - floor(offset.y.toDouble() / cellSizeY).toInt()
+                                        clickerChannel?.send(Pair(xCell, yCell))
+                                    }
+                                }
+                            )
+                        }
+                    ) {
                         this@apply.drawGameState(this)
                     }
                     Column {
@@ -244,10 +281,18 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
                             Button({
                                 startNewGame()
                             }) { Text("Начать заново") }
-                            Button({
-                                stopGame()
-                                game.value = null
-                            }) { Text("Остановить игру") }
+                            if (playByHand.value) {
+                                Button({
+                                    runBlocking {
+                                        clickerChannel!!.send(Pair(-1, -1))
+                                    }
+                                }) { Text("Закончить игру") }
+                            } else {
+                                Button({
+                                    stopGame()
+                                    game.value = null
+                                }) { Text("Остановить игру") }
+                            }
                         }
                         errorMessage?.apply { Text("Ошибка: $this") }
                     }
