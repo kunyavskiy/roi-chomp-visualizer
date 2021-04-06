@@ -153,7 +153,7 @@ class GameManager(
     }
 
      fun getScore() : Double {
-         val bounds = listOf(0, 10, 100, 300, 450, 600, 700, 750, 800, 825)
+         val bounds = listOf(0, 1, 100, 300, 450, 600, 700, 750, 800, 825)
          val W = if (gamesPlayed >= gamesWon - 1) 1 else 0
          val m = secret!!.length;
          if (m >= bounds.last() * gamesPlayed) {
