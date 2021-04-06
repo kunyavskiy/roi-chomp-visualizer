@@ -21,6 +21,7 @@ class GameManager(
     val inputFileName = "game.out"
     val outputFileName = "game.in"
     val columnHeights = Array(fieldSize) { mutableStateOf(fieldSize) }
+    var lastMove = Pair(0, 0)
     val gameLog = mutableStateOf<String?>(null)
     var secret: String? = null
     val gameError = mutableStateOf<String?>(null)
@@ -96,6 +97,7 @@ class GameManager(
             for (i in x until fieldSize) {
                 columnHeights[i].value = minOf(columnHeights[i].value, y)
             }
+            lastMove = Pair(x, y)
         }
         gameLogArray.add(Pair(x + 1, y + 1))
     }
