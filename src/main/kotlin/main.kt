@@ -350,35 +350,47 @@ fun visualizerMain() = Window(
 private fun GameManager.drawGameState(canvas: DrawScope) = with(canvas) {
     val n = fieldSize
     try {
+        val w = size.width / n
+        val h = size.height / n
         for (i in 0..n) {
             drawLine(
-                start = Offset(0f, size.height / n * i),
-                end = Offset(size.width, size.height / n * i),
+                start = Offset(0f, h * i),
+                end = Offset(size.width, h * i),
                 color = Color.Black
             )
             drawLine(
-                start = Offset(size.width / n * i, 0f),
-                end = Offset(size.width / n * i, size.height),
+                start = Offset(w * i, 0f),
+                end = Offset(w * i, size.height),
                 color = Color.Black
             )
         }
         for (i in 0 until n) {
             val rows = columnHeights[i].value
             if (rows != n) {
-                val height = size.height / n * (n - rows)
+                val height = h * (n - rows)
                 drawRect(
                     color = Color.LightGray,
                     topLeft = Offset(
-                        x = size.width / n * i,
+                        x = w * i,
                         y = 0f
                     ),
-                    size = Size(
-                        width = size.width / n,
-                        height = height
-                    )
+                    size = Size(width = w, height = height)
                 )
             }
         }
+        val border = 4
+        val lx = lastMove.first
+        val ly = fieldSize - 1 - lastMove.second
+        drawLine(
+            start = Offset(w * lx + border, h * ly + border),
+            end = Offset(w * (lx + 1) - border, h * (ly + 1) - border),
+            color = Color.Black
+        )
+        drawLine(
+            start = Offset(w * lx + border, h * (ly + 1) - border),
+            end = Offset(w * (lx + 1) - border, h * ly + border),
+            color = Color.Black
+        )
         for (i in 0..n) {
             drawLine(
                 start = Offset(0f, size.height / n * i),
