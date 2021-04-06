@@ -2,12 +2,16 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 import java.io.*
 
-class ClickerSolution(val clicks : Channel<Pair<Int, Int>>) {
+class ClickerSolution(
+    val clicks : Channel<Pair<Int, Int>>,
+    val inputStream: InputStream,
+    val outputStream: OutputStream
+) {
     suspend fun work() {
         try {
             withContext(Dispatchers.IO) {
-                File(getPipePrefix() + "game.in").bufferedReader().use { input ->
-                    File(getPipePrefix() + "game.out").bufferedWriter().use { output ->
+                inputStream.bufferedReader().use { input ->
+                    outputStream.bufferedWriter().use { output ->
                         input.readLine() // 1
                         input.readLine() // n k m
                         input.readLine() // secret

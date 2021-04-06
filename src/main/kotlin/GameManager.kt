@@ -2,6 +2,7 @@ import androidx.compose.runtime.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.*
 import java.io.*
+import java.util.concurrent.atomic.*
 import kotlin.random.*
 
 class BadMoveException(message: String?) : Exception(message)
@@ -13,7 +14,8 @@ class GameManager(
     private val secretLength: Int,
     private val drawMutex: Mutex,
     private val needDelays: Boolean,
-    private val gameSpeed: MutableState<Float>
+    private val gameSpeed: MutableState<Float>,
+    private val streams: Pair<InputStream, OutputStream>?
 ) {
     val ready = mutableStateOf(false)
     val inputFileName = "game.out"
@@ -30,12 +32,17 @@ class GameManager(
     private val gameLogArray = mutableListOf<Pair<Int, Int>>()
 
     suspend fun runGame() {
-        withContext(Dispatchers.IO) {
-            launch {
-                output = PrintWriter(createOutputPipe(outputFileName))
-            }
-            launch {
-                input = createInputPipe(inputFileName).bufferedReader()
+        if (streams != null) {
+            input = streams.first.bufferedReader()
+            output = PrintWriter(streams.second)
+        } else {
+            withContext(Dispatchers.IO) {
+                launch {
+                    output = PrintWriter(createOutputPipe(outputFileName))
+                }
+                launch {
+                    input = createInputPipe(inputFileName).bufferedReader()
+                }
             }
         }
         ready.value = true

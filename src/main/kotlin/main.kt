@@ -101,21 +101,35 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
         errorMessage = null
     }
 
+    fun createInternalPipes() : Pair<Pair<InputStream, OutputStream>?, Pair<InputStream, OutputStream>?> {
+        if (playByHand.value) {
+            val pipe1_in = PipedInputStream()
+            val pipe1_out = PipedOutputStream(pipe1_in)
+            val pipe2_in = PipedInputStream()
+            val pipe2_out = PipedOutputStream(pipe2_in)
+            return (pipe1_in to pipe2_out) to (pipe2_in to pipe1_out)
+        } else {
+            return null to null
+        }
+    }
+
     fun startNewGame() {
         stopGame()
+        val (gamePipes, playerPipes) = createInternalPipes()
         game.value = GameManager(
             fieldSize.value.toInt(),
             maxEaten.value.toInt(),
             secretLength.value.toInt(),
             drawMutex,
             needDrawGame.value,
-            gameSpeed
+            gameSpeed,
+            gamePipes
         )
         job = GlobalScope.launch { game.value?.runGame() }
         if (playByHand.value) {
             clickerJob = GlobalScope.launch {
                 clickerChannel = Channel()
-                ClickerSolution(clickerChannel!!).work()
+                ClickerSolution(clickerChannel!!, playerPipes!!.first, playerPipes!!.second).work()
             }
         }
     }
