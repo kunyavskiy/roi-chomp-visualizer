@@ -11,6 +11,7 @@ import androidx.compose.ui.geometry.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.*
 import androidx.compose.ui.input.pointer.*
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
@@ -23,7 +24,7 @@ fun main() = visualizerMain()
 
 @Composable
 fun TextFieldWithChooseFileButton(label: String, filePath: MutableState<String?>) {
-    Row (verticalAlignment = Alignment.CenterVertically){
+    Row(verticalAlignment = Alignment.CenterVertically) {
         TextField(
             filePath.value ?: "",
             onValueChange = { filePath.value = it },
@@ -76,17 +77,20 @@ fun CheckBoxWithText(state: MutableState<Boolean>, label: String) {
 }
 
 
-fun visualizerMain() = Window(title = "Визуализатор для задачи «Игра с тайным смыслом»", size = IntSize(600, 800)) {
+fun visualizerMain() = Window(
+    title = "Визуализатор для задачи «Игра с тайным смыслом»",
+    size = IntSize(800, 800)
+) {
     val game = remember { mutableStateOf<GameManager?>(null) }
     val fieldSize = remember { mutableStateOf("32") }
     val maxEaten = remember { mutableStateOf("8") }
-    val secretLength = remember { mutableStateOf("100") }
+    val secretLength = remember { mutableStateOf("10") }
     val drawMutex = remember { Mutex() }
     val needDrawGame = remember { mutableStateOf(true) }
     val playByHand = remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var job by remember { mutableStateOf<Job?>(null) }
-    val gameSpeed = remember { mutableStateOf(60f) }
+    val gameSpeed = remember { mutableStateOf(1f) }
     var clickerJob by remember { mutableStateOf<Job?>(null) }
     var clickerChannel by remember { mutableStateOf<Channel<Pair<Int, Int>>?>(null) }
 
@@ -101,7 +105,7 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
         errorMessage = null
     }
 
-    fun createInternalPipes() : Pair<Pair<InputStream, OutputStream>?, Pair<InputStream, OutputStream>?> {
+    fun createInternalPipes(): Pair<Pair<InputStream, OutputStream>?, Pair<InputStream, OutputStream>?> {
         if (playByHand.value) {
             val pipe1_in = PipedInputStream()
             val pipe1_out = PipedOutputStream(pipe1_in)
@@ -138,88 +142,89 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
         drawMutex.lock()
     }
     MaterialTheme {
-        Column {
-            if (game.value == null || game.value!!.gameLog.value != null) {
-                IntTextField(fieldSize, "Размер поля")
-                IntTextField(maxEaten, "Максимум клеток за ход бота")
-                IntTextField(secretLength, "Длина очень важного секрета")
-                Button(
-                    {
-                        startNewGame()
-                    },
-                    enabled = sequenceOf(fieldSize, maxEaten, secretLength).all { it.value.toIntOrNull() != null }
-                ) { Text("Начать игру") }
-                CheckBoxWithText(needDrawGame,"Визуализировать игру")
-                CheckBoxWithText(playByHand,"Играть руками")
-            }
-            game.value?.apply {
-                if (!ready.value) {
-                    val outputName = getPipePrefix() + outputFileName
-                    val inputName = getPipePrefix() + inputFileName
-                    Text(" Ожидание решения")
-                    Text(" Решение должно считывать из файла: $outputName")
-                    Text(" Решение должно выводить в файл: $inputName")
-                    Text(" Пример кода для открытия файлов для:")
-                    val languages = listOf("C++", "Java", "Python", "Pascal", "C#")
-                    var selectedLanguage by remember { mutableStateOf(languages[0]) }
-                    languages.forEach {
-                        Row {
-                            RadioButton(
-                                onClick = { selectedLanguage = it },
-                                selected = selectedLanguage == it
-                            )
-                            Text(it)
+        Row {
+            Column(modifier = Modifier.weight(1f, fill = true)) {
+                if (game.value == null || game.value!!.gameLog.value != null) {
+                    IntTextField(fieldSize, "Размер поля")
+                    IntTextField(maxEaten, "Максимум клеток за ход бота")
+                    IntTextField(secretLength, "Длина очень важного секрета")
+                    Button(
+                        {
+                            startNewGame()
+                        },
+                        enabled = sequenceOf(fieldSize, maxEaten, secretLength).all { it.value.toIntOrNull() != null }
+                    ) { Text("Начать игру") }
+                    CheckBoxWithText(needDrawGame, "Визуализировать игру")
+                    CheckBoxWithText(playByHand, "Играть руками")
+                }
+                game.value?.apply {
+                    if (!ready.value) {
+                        val outputName = getPipePrefix() + outputFileName
+                        val inputName = getPipePrefix() + inputFileName
+                        Text(" Ожидание решения")
+                        Text(" Решение должно считывать из файла: $outputName")
+                        Text(" Решение должно выводить в файл: $inputName")
+                        Text(" Пример кода для открытия файлов для:")
+                        val languages = listOf("C++", "Java", "Python", "Pascal", "C#")
+                        var selectedLanguage by remember { mutableStateOf(languages[0]) }
+                        languages.forEach {
+                            Row {
+                                RadioButton(
+                                    onClick = { selectedLanguage = it },
+                                    selected = selectedLanguage == it
+                                )
+                                Text(it)
+                            }
                         }
-                    }
-                    val outputFileNameEncoded = outputName.replace("\\", "\\\\")
-                    val inputFileNameEncoded = inputName.replace("\\", "\\\\")
-                    when (selectedLanguage) {
-                        "C++" -> {
-                            ConstTextField(
-                                """
+                        val outputFileNameEncoded = outputName.replace("\\", "\\\\")
+                        val inputFileNameEncoded = inputName.replace("\\", "\\\\")
+                        when (selectedLanguage) {
+                            "C++" -> {
+                                ConstTextField(
+                                    """
                                         freopen("$outputFileNameEncoded", "r", stdin);
                                         freopen("$inputFileNameEncoded", "w", stdout);
                                     """.trimIndent()
-                            )
-                            Text("или")
-                            ConstTextField(
-                                """
+                                )
+                                Text("или")
+                                ConstTextField(
+                                    """
                                         ifstream in("$outputFileNameEncoded");
                                         ofstream out("$inputFileNameEncoded");
                                     """.trimIndent()
-                            )
-                        }
-                        "Java" -> {
-                            ConstTextField(
-                                """
+                                )
+                            }
+                            "Java" -> {
+                                ConstTextField(
+                                    """
                                         File inputFile = new File("$outputFileNameEncoded");
                                         File outputFile = new File("$inputFileNameEncoded");
                                         Scanner in = new Scanner(inputFile);
                                         PrintWriter out = new PrintWriter(outputFile); 
                                     """.trimIndent()
-                            )
-                        }
-                        "Python" -> {
-                            ConstTextField(
-                                """
+                                )
+                            }
+                            "Python" -> {
+                                ConstTextField(
+                                    """
                                         sys.stdin = open("$outputFileNameEncoded", "r");
                                         sys.stdout = open("$inputFileNameEncoded", "w");
                                     """.trimIndent()
-                            )
-                        }
-                        "Pascal" -> {
-                            ConstTextField(
-                                """
+                                )
+                            }
+                            "Pascal" -> {
+                                ConstTextField(
+                                    """
                                         AssignFile(input, '$outputName');
                                         Reset(input);
                                         AssignFile(output, '$inputName');
                                         Rewrite(output);
                                     """.trimIndent()
-                            )
-                        }
-                        "C#" -> {
-                            ConstTextField(
-                                """
+                                )
+                            }
+                            "C#" -> {
+                                ConstTextField(
+                                    """
                                         var pipeIn = new NamedPipeClientStream(".", "game.in", PipeDirection.In);
                                         pipeIn.Connect();
                                         StreamReader reader = new StreamReader(pipeIn);
@@ -227,64 +232,63 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
                                         pipeOut.Connect();
                                         StreamWriter writer = new StreamWriter(pipeOut);
                                     """.trimIndent()
-                            )
-                        }
-                    }
-                } else if (gameError.value != null) {
-                    errorMessage = gameError.value
-                    gameError.value = null
-                } else if (gameLog.value != null) {
-                    val played = game.value!!.gamesPlayed
-                    val won = game.value!!.gamesWon
-                    Text("Сыграно игр: $played")
-                    Text("Выиграно игр: $won")
-                    if (gamesPlayed > 1) {
-                        Text("В среднем переданно бит за игру: ${secretLength.value.toDouble() / gamesPlayed}")
-                        Text("Баллов за тест: ${game.value!!.getScore()}")
-                    }
-                    val logFilePath = remember { mutableStateOf<String?>(null) }
-                    val secretFilePath = remember { mutableStateOf<String?>(null) }
-                    TextFieldWithChooseFileButton("Путь для сохранения лога", logFilePath)
-                    TextFieldWithChooseFileButton("Путь для сохранения секрета", secretFilePath)
-                    val fileSaveError = remember { mutableStateOf<String?>(null) }
-                    Button(
-                        onClick = {
-                            try {
-                                File(logFilePath.value!!).printWriter().use {
-                                    it.println(gameLog.value)
-                                }
-                                File(secretFilePath.value!!).printWriter().use {
-                                    it.println(secret)
-                                }
-                                game.value = null
-                                fileSaveError.value = null
-                            } catch (e: Exception) {
-                                fileSaveError.value = e.message
+                                )
                             }
-                        },
-                        enabled = logFilePath.value != null && secretFilePath.value != null
-                    ) { Text("Сохранить") }
-                    fileSaveError.value?.apply { Text("Ошибка сохранения: $this") }
-                } else if (needDrawGame.value || errorMessage != null) {
-                    Canvas(
-                        Modifier.size(Dp(600f), Dp(600f)).pointerInput(Unit) {
-                            detectTapGestures(
-                                onPress = { offset ->
-                                    runBlocking {
-                                        val n = fieldSize.value.toInt()
-                                        val cellSizeX = size.width.toDouble() / n
-                                        val cellSizeY = size.height.toDouble() / n
-                                        val xCell = floor(offset.x.toDouble() / cellSizeX).toInt() + 1
-                                        val yCell = n - floor(offset.y.toDouble() / cellSizeY).toInt()
-                                        clickerChannel?.send(Pair(xCell, yCell))
-                                    }
-                                }
-                            )
                         }
-                    ) {
-                        this@apply.drawGameState(this)
-                    }
-                    Column {
+                    } else if (gameError.value != null) {
+                        errorMessage = gameError.value
+                        gameError.value = null
+                    } else if (gameLog.value != null) {
+                        val played = game.value!!.gamesPlayed
+                        val won = game.value!!.gamesWon
+                        Text("Сыграно игр: $played")
+                        Text("Выиграно игр: $won")
+                        if (gamesPlayed > 1) {
+                            Text("В среднем переданно бит за игру: ${secretLength.value.toDouble() / gamesPlayed}")
+                            Text("Баллов за тест: ${game.value!!.getScore()}")
+                        }
+                        val logFilePath = remember { mutableStateOf<String?>(null) }
+                        val secretFilePath = remember { mutableStateOf<String?>(null) }
+                        TextFieldWithChooseFileButton("Путь для сохранения лога", logFilePath)
+                        TextFieldWithChooseFileButton("Путь для сохранения секрета", secretFilePath)
+                        val fileSaveError = remember { mutableStateOf<String?>(null) }
+                        Button(
+                            onClick = {
+                                try {
+                                    File(logFilePath.value!!).printWriter().use {
+                                        it.println(gameLog.value)
+                                    }
+                                    File(secretFilePath.value!!).printWriter().use {
+                                        it.println(secret)
+                                    }
+                                    game.value = null
+                                    fileSaveError.value = null
+                                } catch (e: Exception) {
+                                    fileSaveError.value = e.message
+                                }
+                            },
+                            enabled = logFilePath.value != null && secretFilePath.value != null
+                        ) { Text("Сохранить") }
+                        fileSaveError.value?.apply { Text("Ошибка сохранения: $this") }
+                    } else if (needDrawGame.value || errorMessage != null) {
+                        Canvas(
+                            Modifier.size(Dp(600f), Dp(600f)).pointerInput(Unit) {
+                                detectTapGestures(
+                                    onPress = { offset ->
+                                        runBlocking {
+                                            val n = fieldSize.value.toInt()
+                                            val cellSizeX = size.width.toDouble() / n
+                                            val cellSizeY = size.height.toDouble() / n
+                                            val xCell = floor(offset.x.toDouble() / cellSizeX).toInt() + 1
+                                            val yCell = n - floor(offset.y.toDouble() / cellSizeY).toInt()
+                                            clickerChannel?.send(Pair(xCell, yCell))
+                                        }
+                                    }
+                                )
+                            }
+                        ) {
+                            this@apply.drawGameState(this)
+                        }
                         Row {
                             Slider(
                                 value = gameSpeed.value,
@@ -309,9 +313,33 @@ fun visualizerMain() = Window(title = "Визуализатор для зада�
                             }
                         }
                         errorMessage?.apply { Text("Ошибка: $this") }
+
+                    } else {
+                        Text("Ожидаем работы решения")
                     }
-                } else {
-                    Text("Ожидаем работы решения")
+                }
+            }
+            Column(modifier = Modifier.width(Dp(200f)).verticalScroll(rememberScrollState())) {
+                if (game.value != null) {
+                    for (s in game.value?.visualLog!!.asIterable()) {
+                        if (s.text == "ввод-вывод") {
+                            Row(modifier = Modifier.width(Dp(200f))) {
+                                Text(
+                                    "ввод",
+                                    modifier = Modifier.width(Dp(100f)),
+                                    color = Color.Red
+                                )
+                                Text(
+                                    "вывод",
+                                    modifier = Modifier.width(Dp(100f)),
+                                    textAlign = TextAlign.Right,
+                                    color = Color.Blue
+                                )
+                            }
+                        } else {
+                            Text(s, modifier = Modifier.width(Dp(200f)))
+                        }
+                    }
                 }
             }
         }
