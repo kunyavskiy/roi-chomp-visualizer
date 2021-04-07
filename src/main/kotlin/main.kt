@@ -320,7 +320,8 @@ fun visualizerMain() = Window(
                     }
                 }
             }
-            Column(modifier = Modifier.width(Dp(200f)).verticalScroll(rememberScrollState())) {
+            val verticalScrollState = rememberScrollState()
+            Column(modifier = Modifier.width(Dp(200f)).verticalScroll(verticalScrollState)) {
                 if (game.value != null) {
                     for (s in game.value?.visualLog!!.asIterable()) {
                         if (s.text == "ввод-вывод") {
@@ -343,6 +344,18 @@ fun visualizerMain() = Window(
                     }
                 }
             }
+            VerticalScrollbar(
+                adapter = rememberScrollbarAdapter(verticalScrollState),
+                modifier = Modifier.align(Alignment.CenterVertically),
+                style = ScrollbarStyle(
+                    minimalHeight = Dp(100f),
+                    thickness = Dp(10f),
+                    shape = RectangleShape,
+                    hoverDurationMillis = 1000,
+                    unhoverColor = Color.Gray,
+                    hoverColor = Color.Black
+                )
+            )
         }
     }
     drawMutex.unlock()
