@@ -211,8 +211,8 @@ fun visualizerMain() = Window(
                             "Python" -> {
                                 ConstTextField(
                                     """
-                                        sys.stdin = open("$outputFileNameEncoded", "r");
-                                        sys.stdout = open("$inputFileNameEncoded", "w");
+                                        sys.stdin = open("$outputFileNameEncoded", "r")
+                                        sys.stdout = open("$inputFileNameEncoded", "w")
                                     """.trimIndent()
                                 )
                             }
