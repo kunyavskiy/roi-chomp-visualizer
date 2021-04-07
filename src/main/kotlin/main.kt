@@ -346,7 +346,12 @@ fun visualizerMain() = Window(
                 }
             }
             val verticalScrollState = rememberScrollState()
-            Column(modifier = Modifier.width(Dp(DP_SIZE / 4.0f)).verticalScroll(verticalScrollState)) {
+            Column(
+                modifier = Modifier
+                    .width(Dp(DP_SIZE / 4.0f))
+                    .verticalScroll(verticalScrollState)
+                    .padding(horizontal = 5.dp)
+            ) {
                 if (game.value != null) {
                     for (s in game.value?.visualLog!!.asIterable()) {
                         if (s.text == "ввод-вывод") {
