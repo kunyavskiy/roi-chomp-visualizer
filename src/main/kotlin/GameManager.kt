@@ -112,7 +112,9 @@ class GameManager(
     }
 
     private fun log(s: AnnotatedString) {
-        visualLog.add(s)
+        if (needDelays) {
+            visualLog.add(s)
+        }
     }
 
     private fun log(s: String) {
