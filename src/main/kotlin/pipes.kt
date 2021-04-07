@@ -26,7 +26,7 @@ fun createOutputPipe(name: String): OutputStream {
     }
 }
 
-fun cleanupPipeOnCalcel(name: String) {
+fun cleanupPipeOnCancel(name: String) {
     if (!Platform.isWindows()) {
         File(getPipePrefix() + name).delete()
         createLinuxPipe(name)

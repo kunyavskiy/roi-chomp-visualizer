@@ -90,8 +90,8 @@ class GameManager(
                 if (e !is CancellationException) {
                     gameError.value = e.message ?: "Неизвестная ошибка"
                 } else {
-                    cleanupPipeOnCalcel(inputFileName)
-                    cleanupPipeOnCalcel(outputFileName)
+                    cleanupPipeOnCancel(inputFileName)
+                    cleanupPipeOnCancel(outputFileName)
                 }
             } finally {
                 input?.close()
@@ -218,10 +218,10 @@ class GameManager(
 
     fun getScore(): Double {
         val bounds = listOf(0, 1, 100, 300, 450, 600, 700, 750, 800, 825)
-        val W = if (gamesPlayed >= gamesWon - 1) 1 else 0
+        val w = if (gamesPlayed >= gamesWon - 1) 1 else 0
         val m = secret!!.length
         if (m >= bounds.last() * gamesPlayed) {
-            return 9f + W.toDouble()
+            return 9f + w.toDouble()
         } else {
             for (i in bounds.size - 2 downTo 0) {
                 if (m > bounds[i] * gamesPlayed) {

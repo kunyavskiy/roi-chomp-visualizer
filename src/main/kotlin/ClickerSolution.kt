@@ -1,11 +1,13 @@
+
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 import java.io.*
 
+@Suppress("BlockingMethodInNonBlockingContext")
 class ClickerSolution(
-    val clicks : Channel<Pair<Int, Int>>,
-    val inputStream: InputStream,
-    val outputStream: OutputStream
+    private val clicks : Channel<Pair<Int, Int>>,
+    private val inputStream: InputStream,
+    private val outputStream: OutputStream
 ) {
     suspend fun work() {
         try {

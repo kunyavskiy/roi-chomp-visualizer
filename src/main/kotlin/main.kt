@@ -19,7 +19,6 @@ import kotlinx.coroutines.channels.*
 import kotlinx.coroutines.channels.Channel.Factory.CONFLATED
 import kotlinx.coroutines.sync.*
 import java.io.*
-import java.lang.Math.floor
 import javax.swing.*
 
 fun main() = visualizerMain()
@@ -78,7 +77,7 @@ fun CheckBoxWithText(state: MutableState<Boolean>, label: String) {
     }
 }
 
-val DP_SIZE = 644
+const val DP_SIZE = 644
 
 fun visualizerMain() = Window(
     title = "Визуализатор для задачи «Игра с тайным смыслом»",
@@ -109,14 +108,14 @@ fun visualizerMain() = Window(
     }
 
     fun createInternalPipes(): Pair<Pair<InputStream, OutputStream>?, Pair<InputStream, OutputStream>?> {
-        if (playByHand.value) {
-            val pipe1_in = PipedInputStream()
-            val pipe1_out = PipedOutputStream(pipe1_in)
-            val pipe2_in = PipedInputStream()
-            val pipe2_out = PipedOutputStream(pipe2_in)
-            return (pipe1_in to pipe2_out) to (pipe2_in to pipe1_out)
+        return if (playByHand.value) {
+            val pipe1In = PipedInputStream()
+            val pipe1Out = PipedOutputStream(pipe1In)
+            val pipe2In = PipedInputStream()
+            val pipe2Out = PipedOutputStream(pipe2In)
+            (pipe1In to pipe2Out) to (pipe2In to pipe1Out)
         } else {
-            return null to null
+            null to null
         }
     }
 
@@ -136,7 +135,7 @@ fun visualizerMain() = Window(
         if (playByHand.value) {
             clickerJob = GlobalScope.launch {
                 clickerChannel = Channel(CONFLATED)
-                ClickerSolution(clickerChannel!!, playerPipes!!.first, playerPipes!!.second).work()
+                ClickerSolution(clickerChannel!!, playerPipes!!.first, playerPipes.second).work()
             }
         }
     }
@@ -304,8 +303,8 @@ fun visualizerMain() = Window(
                                             val n = fieldSize.value.toInt()
                                             val cellSizeX = size.width.toDouble() / n
                                             val cellSizeY = size.height.toDouble() / n
-                                            val xCell = floor(offset.x.toDouble() / cellSizeX).toInt() + 1
-                                            val yCell = n - floor(offset.y.toDouble() / cellSizeY).toInt()
+                                            val xCell = kotlin.math.floor(offset.x.toDouble() / cellSizeX).toInt() + 1
+                                            val yCell = n - kotlin.math.floor(offset.y.toDouble() / cellSizeY).toInt()
                                             if (game.value!!.isOkMove(xCell - 1, yCell - 1)) {
                                                 clickerChannel?.send(Pair(xCell, yCell))
                                             }
