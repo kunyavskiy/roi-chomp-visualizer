@@ -1,11 +1,10 @@
-
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 import java.io.*
 
 @Suppress("BlockingMethodInNonBlockingContext")
 class ClickerSolution(
-    private val clicks : Channel<Pair<Int, Int>>,
+    private val clicks: Channel<Pair<Int, Int>>,
     private val inputStream: InputStream,
     private val outputStream: OutputStream
 ) {
@@ -46,7 +45,7 @@ class ClickerSolution(
                     }
                 }
             }
-        } catch (_ : Exception) {
+        } catch (_: Exception) {
 
         }
     }

@@ -11,7 +11,7 @@ import androidx.compose.ui.geometry.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.*
 import androidx.compose.ui.input.pointer.*
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.*
 import com.sun.jna.*
 import kotlinx.coroutines.*
@@ -254,7 +254,7 @@ fun visualizerMain() = Window(
                             }
                             stopGame()
                             game.value = null
-                        }) { Text("Отменить запуск")}
+                        }) { Text("Отменить запуск") }
                     } else if (gameError.value != null) {
                         errorMessage = gameError.value
                         gameError.value = null

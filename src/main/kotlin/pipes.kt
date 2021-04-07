@@ -1,12 +1,7 @@
-import com.sun.jna.Platform
-import com.sun.jna.platform.win32.Kernel32
-import com.sun.jna.platform.win32.WinBase
-import com.sun.jna.platform.win32.WinNT
-import com.sun.jna.ptr.IntByReference
-import java.io.File
-import java.io.IOException
-import java.io.InputStream
-import java.io.OutputStream
+import com.sun.jna.*
+import com.sun.jna.platform.win32.*
+import com.sun.jna.ptr.*
+import java.io.*
 
 fun getPipePrefix() = if (Platform.isWindows()) "\\\\.\\pipe\\" else "/tmp/"
 

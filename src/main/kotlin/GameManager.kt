@@ -24,7 +24,7 @@ class GameManager(
     val inputFileName = "game.out"
     val outputFileName = "game.in"
     val columnHeights = Array(fieldSize) { mutableStateOf(fieldSize) }
-    var lastMove : Pair<Int, Int>? = null
+    var lastMove: Pair<Int, Int>? = null
     val gameLog = mutableStateOf<String?>(null)
     var secret: String? = null
     val gameError = mutableStateOf<String?>(null)
@@ -65,7 +65,12 @@ class GameManager(
                 output.println(secret!!)
                 output.flush()
                 logHeader("Сгенерирован секрет:")
-                log(AnnotatedString(if (secret!!.length <= 15) secret!! else secret!!.substring(0, 15) + "..." , spanStyle = SpanStyle(fontFamily = FontFamily.Monospace)))
+                log(
+                    AnnotatedString(
+                        if (secret!!.length <= 15) secret!! else secret!!.substring(0, 15) + "...",
+                        spanStyle = SpanStyle(fontFamily = FontFamily.Monospace)
+                    )
+                )
                 var firstMove = true
                 var games = 0
                 while (runOneGame(input, output, firstMove)) {
