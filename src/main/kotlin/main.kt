@@ -37,7 +37,7 @@ fun TextFieldWithChooseFileButton(label: String, filePath: MutableState<String?>
             onClick = {
                 var result: File?
                 JFileChooser(File(".")).apply {
-                    showOpenDialog(null)
+                    showSaveDialog(null)
                     result = selectedFile
                 }
                 result?.apply {
@@ -78,10 +78,11 @@ fun CheckBoxWithText(state: MutableState<Boolean>, label: String) {
     }
 }
 
+val DP_SIZE = 644
 
 fun visualizerMain() = Window(
     title = "Визуализатор для задачи «Игра с тайным смыслом»",
-    size = IntSize(800, 800)
+    size = IntSize(DP_SIZE, DP_SIZE)
 ) {
     val game = remember { mutableStateOf<GameManager?>(null) }
     val fieldSize = remember { mutableStateOf("32") }
@@ -239,6 +240,8 @@ fun visualizerMain() = Window(
                                 )
                             }
                         }
+                        Text("или, если вы запускаете из консоли")
+                        ConstTextField("solution_cmd <$outputName >$inputName")
                         Button({
                             GlobalScope.launch {
                                 withContext(Dispatchers.IO) {
@@ -294,7 +297,7 @@ fun visualizerMain() = Window(
                         fileSaveError.value?.apply { Text("Ошибка сохранения: $this") }
                     } else if (needDrawGame.value || errorMessage != null) {
                         Canvas(
-                            Modifier.size(Dp(600f), Dp(600f)).pointerInput(Unit) {
+                            Modifier.size(Dp(DP_SIZE * 3.0f / 4), Dp(DP_SIZE * 3.0f / 4)).pointerInput(Unit) {
                                 detectTapGestures(
                                     onPress = { offset ->
                                         runBlocking {
@@ -344,25 +347,25 @@ fun visualizerMain() = Window(
                 }
             }
             val verticalScrollState = rememberScrollState()
-            Column(modifier = Modifier.width(Dp(200f)).verticalScroll(verticalScrollState)) {
+            Column(modifier = Modifier.width(Dp(DP_SIZE / 4.0f)).verticalScroll(verticalScrollState)) {
                 if (game.value != null) {
                     for (s in game.value?.visualLog!!.asIterable()) {
                         if (s.text == "ввод-вывод") {
-                            Row(modifier = Modifier.width(Dp(200f))) {
+                            Row(modifier = Modifier.width(Dp(DP_SIZE / 4.0f))) {
                                 Text(
                                     "ввод",
-                                    modifier = Modifier.width(Dp(100f)),
+                                    modifier = Modifier.width(Dp(DP_SIZE / 8.0f)),
                                     color = Color.Red
                                 )
                                 Text(
                                     "вывод",
-                                    modifier = Modifier.width(Dp(100f)),
+                                    modifier = Modifier.width(Dp(DP_SIZE / 8.0f)),
                                     textAlign = TextAlign.Right,
                                     color = Color.Blue
                                 )
                             }
                         } else {
-                            Text(s, modifier = Modifier.width(Dp(200f)))
+                            Text(s, modifier = Modifier.width(Dp(DP_SIZE / 4.0f)))
                         }
                     }
                 }
