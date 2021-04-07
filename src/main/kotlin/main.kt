@@ -13,8 +13,10 @@ import androidx.compose.ui.graphics.drawscope.*
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
+import com.sun.jna.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
+import kotlinx.coroutines.channels.Channel.Factory.CONFLATED
 import kotlinx.coroutines.sync.*
 import java.io.*
 import java.lang.Math.floor
@@ -29,7 +31,7 @@ fun TextFieldWithChooseFileButton(label: String, filePath: MutableState<String?>
             filePath.value ?: "",
             onValueChange = { filePath.value = it },
             singleLine = true,
-            label = { Text(label) },
+            label = { Text(label) }
         )
         Button(
             onClick = {
@@ -132,7 +134,7 @@ fun visualizerMain() = Window(
         job = GlobalScope.launch { game.value?.runGame() }
         if (playByHand.value) {
             clickerJob = GlobalScope.launch {
-                clickerChannel = Channel()
+                clickerChannel = Channel(CONFLATED)
                 ClickerSolution(clickerChannel!!, playerPipes!!.first, playerPipes!!.second).work()
             }
         }
@@ -147,7 +149,7 @@ fun visualizerMain() = Window(
                 if (game.value == null || game.value!!.gameLog.value != null) {
                     IntTextField(fieldSize, "Размер поля")
                     IntTextField(maxEaten, "Максимум клеток за ход бота")
-                    IntTextField(secretLength, "Длина очень важного секрета")
+                    IntTextField(secretLength, "Длина сообщения")
                     Button(
                         {
                             startNewGame()
@@ -155,7 +157,7 @@ fun visualizerMain() = Window(
                         enabled = sequenceOf(fieldSize, maxEaten, secretLength).all { it.value.toIntOrNull() != null }
                     ) { Text("Начать игру") }
                     CheckBoxWithText(needDrawGame, "Визуализировать игру")
-                    CheckBoxWithText(playByHand, "Играть руками")
+                    CheckBoxWithText(playByHand, "Сыграть самостоятельно")
                 }
                 game.value?.apply {
                     if (!ready.value) {
@@ -169,11 +171,13 @@ fun visualizerMain() = Window(
                         var selectedLanguage by remember { mutableStateOf(languages[0]) }
                         languages.forEach {
                             Row {
-                                RadioButton(
-                                    onClick = { selectedLanguage = it },
-                                    selected = selectedLanguage == it
-                                )
-                                Text(it)
+                                if (Platform.isWindows() || it != "C#") {
+                                    RadioButton(
+                                        onClick = { selectedLanguage = it },
+                                        selected = selectedLanguage == it
+                                    )
+                                    Text(it)
+                                }
                             }
                         }
                         val outputFileNameEncoded = outputName.replace("\\", "\\\\")
@@ -235,6 +239,20 @@ fun visualizerMain() = Window(
                                 )
                             }
                         }
+                        Button({
+                            GlobalScope.launch {
+                                withContext(Dispatchers.IO) {
+                                    launch {
+                                        File(getPipePrefix() + outputFileName).bufferedReader().use { }
+                                    }
+                                    launch {
+                                        File(getPipePrefix() + inputFileName).bufferedWriter().use {}
+                                    }
+                                }
+                            }
+                            stopGame()
+                            game.value = null
+                        }) { Text("Отменить запуск")}
                     } else if (gameError.value != null) {
                         errorMessage = gameError.value
                         gameError.value = null
@@ -249,17 +267,21 @@ fun visualizerMain() = Window(
                         }
                         val logFilePath = remember { mutableStateOf<String?>(null) }
                         val secretFilePath = remember { mutableStateOf<String?>(null) }
-                        TextFieldWithChooseFileButton("Путь для сохранения лога", logFilePath)
-                        TextFieldWithChooseFileButton("Путь для сохранения секрета", secretFilePath)
+                        TextFieldWithChooseFileButton("Путь к логу игры", logFilePath)
+                        TextFieldWithChooseFileButton("Путь к сообщению", secretFilePath)
                         val fileSaveError = remember { mutableStateOf<String?>(null) }
                         Button(
                             onClick = {
                                 try {
-                                    File(logFilePath.value!!).printWriter().use {
-                                        it.println(gameLog.value)
+                                    logFilePath.value?.apply {
+                                        File(this).printWriter().use {
+                                            it.println(gameLog.value)
+                                        }
                                     }
-                                    File(secretFilePath.value!!).printWriter().use {
-                                        it.println(secret)
+                                    secretFilePath.value?.apply {
+                                        File(this).printWriter().use {
+                                            it.println(secret)
+                                        }
                                     }
                                     game.value = null
                                     fileSaveError.value = null
@@ -267,7 +289,7 @@ fun visualizerMain() = Window(
                                     fileSaveError.value = e.message
                                 }
                             },
-                            enabled = logFilePath.value != null && secretFilePath.value != null
+                            enabled = logFilePath.value != null
                         ) { Text("Сохранить") }
                         fileSaveError.value?.apply { Text("Ошибка сохранения: $this") }
                     } else if (needDrawGame.value || errorMessage != null) {
