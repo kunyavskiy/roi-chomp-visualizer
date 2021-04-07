@@ -42,6 +42,10 @@ class GameManager(
     private val rnd = Random(239)
     private val gameLogArray = mutableListOf<Pair<Int, Int>>()
 
+    fun isOkMove(x: Int, y: Int): Boolean {
+        return columnHeights[x].value > y
+    }
+
     suspend fun runGame() {
         if (streams != null) {
             input = streams.first.bufferedReader()
@@ -140,7 +144,7 @@ class GameManager(
 
     private suspend fun processMove(x: Int, y: Int) {
         drawMutex.withLock {
-            if (columnHeights[x].value <= y) {
+            if (!isOkMove(x, y)) {
                 throw BadMoveException("Невалидный ход: клетка (${x + 1}, ${y + 1}) уже закрашена")
             }
             for (i in x until fieldSize) {

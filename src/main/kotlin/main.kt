@@ -281,7 +281,8 @@ fun visualizerMain() = Window(
                                             val cellSizeY = size.height.toDouble() / n
                                             val xCell = floor(offset.x.toDouble() / cellSizeX).toInt() + 1
                                             val yCell = n - floor(offset.y.toDouble() / cellSizeY).toInt()
-                                            clickerChannel?.send(Pair(xCell, yCell))
+                                            if (game.value!!.isOkMove(xCell - 1, yCell - 1))
+                                                clickerChannel?.send(Pair(xCell, yCell))
                                         }
                                     }
                                 )
