@@ -303,8 +303,9 @@ fun visualizerMain() = Window(
                                             val cellSizeY = size.height.toDouble() / n
                                             val xCell = floor(offset.x.toDouble() / cellSizeX).toInt() + 1
                                             val yCell = n - floor(offset.y.toDouble() / cellSizeY).toInt()
-                                            if (game.value!!.isOkMove(xCell - 1, yCell - 1))
+                                            if (game.value!!.isOkMove(xCell - 1, yCell - 1)) {
                                                 clickerChannel?.send(Pair(xCell, yCell))
+                                            }
                                         }
                                     }
                                 )
@@ -414,10 +415,10 @@ private fun GameManager.drawGameState(canvas: DrawScope) = with(canvas) {
                 )
             }
         }
-        if (lastMove != Pair(-1, -1)) {
+        lastMove?.apply {
             val border = 4
-            val lx = lastMove.first
-            val ly = fieldSize - 1 - lastMove.second
+            val lx = first
+            val ly = fieldSize - 1 - second
             drawLine(
                 start = Offset(w * lx + border, h * ly + border),
                 end = Offset(w * (lx + 1) - border, h * (ly + 1) - border),

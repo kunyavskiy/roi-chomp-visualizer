@@ -24,7 +24,7 @@ class GameManager(
     val inputFileName = "game.out"
     val outputFileName = "game.in"
     val columnHeights = Array(fieldSize) { mutableStateOf(fieldSize) }
-    var lastMove = Pair(-1, -1)
+    var lastMove : Pair<Int, Int>? = null
     val gameLog = mutableStateOf<String?>(null)
     var secret: String? = null
     val gameError = mutableStateOf<String?>(null)
@@ -78,6 +78,7 @@ class GameManager(
                             }
                         }
                     }
+                    lastMove = null
                 }
                 val builder = StringBuilder()
                 builder.append("2").append(System.lineSeparator())
